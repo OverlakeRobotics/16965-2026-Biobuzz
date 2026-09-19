@@ -2,124 +2,108 @@ package org.firstinspires.ftc.teamcode.examples;
 
 
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.Scheduler;
+import com.pedropathing.ivy.commands.Commands;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
-import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
-import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.system.PathPlanRunner;
+import org.firstinspires.ftc.teamcode.system.PathRoute;
 import org.firstinspires.ftc.teamcode.system.PathServer;
+import org.firstinspires.ftc.teamcode.system.PedroPathBuilder;
 
-import java.util.Arrays;
+import java.util.List;
 
 
 // This is an example OpMode designed to interface with the Overlake Robotics Path Planner.
-// It will let you use the path planner to upload a path to the robot with movement and two tags.
-// The two tags are:
-//      - velocity: Changes the velocity of the robot to the tags value (this is in in/s).
-//      - pause: Pauses the robot for a number of seconds equal to the tags value.
-// Feel free to take this OpMode and add your own robot specific tags if you are using the path planner.
+// It lets you upload a path from the planner to the robot and follows it with Pedro Pathing,
+// sequencing everything with Ivy commands. Two tags are handled for you by PathPlanRunner:
+//      - velocity: Caps the robot's speed. The value is a percent of max speed (100 = full speed);
+//                  a value of 1 or less is taken as a fraction.
+//      - pause: Stops the robot for a number of seconds equal to the tag's value.
+// Add your own tags in commandFor() below.
+//
+// Robot setup: this example uses the Follower from pedro/Constants.java (Pinpoint localizer +
+// Mecanum drivetrain + Foresight). If you copy this OpMode to another robot, copy
+// pedro/Constants.java as well and run the Pedro tuners (pedro/Tuning.java) to fill it in.
 //@Disabled
 @Config
 @Autonomous(name = "Path Planning Example", group = "Autonomous")
-public class PathPlanExample extends OpMode {
-    public double yOffset = -168.0;
-    public double xOffset = -84.0;
-
-    private OdometryHolonomicDrivetrain driveTrain;
-    public Pose2D[] positions;
-    public PathServer.Tag[] tags;
-    private int lastTagIndex = 0;
-    private final ElapsedTime runtime = new ElapsedTime();
-    private double lastTime = 0;
-    private double pauseTimeLeft = 0;
-    private int pausedIndex = -1;
+public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler {
+    private Follower follower;
+    private Command routeCommand;
+    private List<PedroPathBuilder.Chunk> chunks;
 
     @Override
     public void init() {
-        GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
-        driveTrain = new OdometryHolonomicDrivetrain(
-                hardwareMap.get(DcMotorEx.class, "backLeft"),
-                hardwareMap.get(DcMotorEx.class, "backRight"),
-                hardwareMap.get(DcMotorEx.class, "frontLeft"),
-                hardwareMap.get(DcMotorEx.class, "frontRight"),
-                new GoBildaPinpointOdometry(pinpointDriver)
-        );
-
+        Scheduler.reset();   // the scheduler is static, so clear anything left from a previous OpMode
+        follower = Constants.create(hardwareMap);
+        PathPlanRunner.publishRobotLimits(follower);   // lets the planner preview timing with real limits
         PathServer.startServer();
     }
 
     @Override
     public void init_loop() {
-        driveTrain.updatePosition();
-        PathServer.setRobotPose(driveTrain.getPosition());
+        // Show the planner where the robot thinks it is (the planner works in degrees).
+        follower.update();
+        PathServer.setRobotPose(toPose2D(follower.pose()));
+        telemetry.addData("Route", PathServer.getRoute().segments.size() + " segments, "
+                + PathServer.getRoute().tags.size() + " tags");
+        telemetry.update();
     }
 
     @Override
     public void start() {
-        driveTrain.setVelocity((int) (PathServer.getVelocity() * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
-        positions = PathServer.getPath();
-        driveTrain.setPosition(PathServer.getStartPose());
-        driveTrain.setTolerance(PathServer.getTolerance());
+        PathRoute route = PathServer.getRoute();
+        follower.setPose(PedroPathBuilder.toPose(route.start));
 
-        tags = PathServer.getTags();
-        Arrays.sort(tags);
-
-        driveTrain.setPositionDrive(positions);
+        chunks = PedroPathBuilder.build(route);                       // split at "pause" tags
+        routeCommand = PathPlanRunner.build(follower, chunks, this);  // one command for the whole route
+        Scheduler.schedule(routeCommand);
     }
-
 
     @Override
     public void loop() {
-        driveTrain.updatePosition();
-        Pose2D pos = driveTrain.getPosition();
-        PathServer.setRobotPose(pos);
+        follower.update();      // localizes and drives the motors
+        Scheduler.execute();    // advances the route command and any tag commands
 
-        double curTime = runtime.seconds();
-        double dt = curTime - lastTime;
-        lastTime = curTime;
-
-        if (pauseTimeLeft <= 0) {
-            driveTrain.drive();
-            int nextPointIndex = driveTrain.getNextPointIndex();
-
-            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
-                PathServer.Tag currTag = tags[lastTagIndex];
-                switch (currTag.name) {
-                    case "velocity":
-                        driveTrain.setVelocity((int) (currTag.value * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
-                        break;
-                    case "pause":
-                        if (currTag.value <= 0) break;
-                        pauseTimeLeft = currTag.value;
-                        pausedIndex = nextPointIndex;
-                        driveTrain.setPositionDrive(positions[nextPointIndex - 1]);
-                        break;
-                    // Add more cases here for your own custom tags!
-                }
-                lastTagIndex++;
-            }
-        } else {
-            pauseTimeLeft -= dt;
-
-            if (pauseTimeLeft <= 0) {
-                pauseTimeLeft = 0;
-                driveTrain.setPositionDrive(positions, pausedIndex);
-            } else {
-                driveTrain.setPositionDrive(positions[pausedIndex - 1]);
-            }
-        }
+        PathServer.setRobotPose(toPose2D(follower.pose()));
+        telemetry.addData("Following", follower.following());
+        telemetry.addData("Sub-path", follower.pathIndex());
+        telemetry.addData("Route done", routeCommand != null && !routeCommand.isScheduled());
+        telemetry.update();
     }
 
     @Override
     public void stop() {
+        Scheduler.reset();
+        follower.stop();
         PathServer.stopServer();
+    }
+
+    // Called once per tag while the route command is built. Return the command to run when the
+    // robot reaches the tag, or null to ignore the tag. "velocity" and "pause" never get here.
+    @Override
+    public Command commandFor(String name, double value) {
+        switch (name) {
+            case "log":
+                return Commands.instant(() -> telemetry.log().add("Reached log tag " + value));
+            // Add more cases here for your own custom tags! Long running behaviors can be built
+            // with Command.build().setStart(...).setExecute(...).setDone(...).
+            default:
+                return null;
+        }
+    }
+
+    private static Pose2D toPose2D(Pose p) {
+        return new Pose2D(DistanceUnit.INCH, p.x(), p.y(), AngleUnit.DEGREES, Math.toDegrees(p.heading()));
     }
 }
