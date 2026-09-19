@@ -1,8 +1,13 @@
 package org.firstinspires.ftc.teamcode.code.helpers;
 
-import android.util.Log;
-
 import com.acmerobotics.dashboard.config.Config;
+import com.pedropathing.api.Paths;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.Scheduler;
+import com.pedropathing.ivy.commands.Commands;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.interpolator.Interpolator;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -20,167 +25,95 @@ import org.firstinspires.ftc.teamcode.code.helpers.Prism.GoBildaPrismDriver;
 import org.firstinspires.ftc.teamcode.code.parts.Intake;
 import org.firstinspires.ftc.teamcode.code.parts.LEDIndicator;
 import org.firstinspires.ftc.teamcode.code.parts.Turret;
-import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.system.FollowerOdometryModule;
+import org.firstinspires.ftc.teamcode.system.PathPlanRunner;
+import org.firstinspires.ftc.teamcode.system.PathRoute;
+import org.firstinspires.ftc.teamcode.system.PathServer;
+import org.firstinspires.ftc.teamcode.system.PedroPathBuilder;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
-import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
-import org.firstinspires.ftc.teamcode.system.PathServer;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
+// Base autonomous: follows a Path Planner route with Pedro Pathing (Follower from
+// pedro/Constants) and runs the robot-specific tags as Ivy commands. Subclasses either point
+// jsonFilename at an asset (readJson = true) or, like PathPlanner, hand in the route uploaded to
+// PathServer.
+//
+// Tags:
+//   velocity, pause        built into PathPlanRunner / PedroPathBuilder
+//   intake                 set intake velocity (<= 0 stops it)
+//   autoAim                aim the drivetrain heading, hood and shooter at the goal on this segment
+//   shooterVelocity        set shooter velocity
+//   hoodAngle              set hood angle
+//   launchArtifacts        stop at the node and shoot for <value> seconds
+//   startLaunch/endLaunch  shoot while moving between the two tags
+//   shootWhileMove         enable (1) / disable (0) the moving-shot compensation
+//   autoArtifactPickup     drive this segment with the HuskyLens steering onto artifacts
 @Config
-public abstract class BaseAuto extends OpMode {
-    public static final double yOffset = -156.0; // -168.0 // mm
-    public static final double xOffset = 72.0; // -84.0 // mm
-
-    protected int velocity;
-    protected int intakeVelocity;
-    protected double tolerance;
+public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandler {
     protected Reader jsonReader;
     protected boolean readJson;
     protected String jsonFilename;
-    protected OdometryHolonomicDrivetrain driveTrain;
+
+    protected Follower follower;
+    protected FollowerOdometryModule odometry;
     private Intake intake;
     private LEDIndicator ledIndicator;
     private Turret turret;
     private AutoAligner autoAligner;
     private Limelight3A limelight;
     private HuskyLens huskyLens;
-    private final ElapsedTime runtime = new ElapsedTime();
 
-    protected Pose2D[] positions;
-    protected PathServer.Tag[] tags;
-
-    public static double p = 30; // 19; // 30;
-    public static double i = 0; // 0.1; // 0;
-    public static double d = 7; // 0; // 7;
-    public static double f = 0;
-    public static double positionP = 3;
+    // The route to run. PathPlanner sets this from PathServer before calling start(); asset based
+    // autos fill it in start() from jsonFilename.
+    protected PathRoute route;
+    protected List<PedroPathBuilder.Chunk> chunks;
+    private Command routeCommand;
+    private Command shootOnMoveService;
 
     public static double hoodAngleVelScale = 0.5;
-
     public static double turretPreturnConstant = 0; //0.1;
 
     public static double huskyLensXP = 0.1;
     public static int huskyLensCenter = 160;
-//    public static int searchVelocity = 1500;
+    public static double huskyLensTargetY = 67;
+    public static double huskyLensRetargetInches = 1.0;
+    public static double shootingIntakeVelocity = 2800;
+    public static double launchHeadingRetargetDeg = 0.5;
 
     private double wantedShooterVelocity = 0;
     private boolean isShooting;
     public double shooterDelay = 0.0; // 0.5;
-    private double shooterTimer = 0;
     public String alliance;
+    private int intakeVelocity;
 
-    protected Pose2D startPose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
-    private int lastTagIndex = 0;
-    private double lastTime = 0;
-    private double pauseTimeLeft = 0;
-    private int pausedIndex = -1;
-    private int autoAlignIndex = -1;
-    private boolean searchingForArtifacts = false;
-    private boolean pickingUp = false;
-    private int searchEndIndex = -1;
-    // Gets the data for a path from a json, as a string.
+    // Reads a route from jsonReader (planner export, version 1 or 2).
     public void parseJsonFromString() throws IOException, JSONException {
         BufferedReader br = new BufferedReader(jsonReader);
         StringBuilder sb = new StringBuilder();
         String line;
         while ((line = br.readLine()) != null) sb.append(line);
-        JSONObject root = new JSONObject(sb.toString());
-
-        // Velocity (inches/sec) -> encoder counts/sec
-        double velInches = root.optDouble("velocity", 0);
-        velocity = (int) (velInches * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH);
-
-        // Tolerance (inches)
-        tolerance = root.optDouble("tolerance", 1.0);
-
-        alliance = root.optString("alliance", alliance);
-        alliance = alliance.trim().toLowerCase();
-
-        // Start pose (support object or array formats)
-        double sx = 0;
-        double sy = 0;
-        double sh = 0;
-        Object startObj = root.opt("start");
-        if (startObj instanceof JSONArray) {
-            JSONArray s = (JSONArray) startObj;
-            sx = s.optDouble(0, 0);
-            sy = s.optDouble(1, 0);
-            sh = s.optDouble(2, 0);
-        } else if (startObj instanceof JSONObject) {
-            JSONObject s = (JSONObject) startObj;
-            sx = s.optDouble("x", 0);
-            sy = s.optDouble("y", 0);
-            sh = s.optDouble("h", 0);
-        }
-        startPose = new Pose2D(DistanceUnit.INCH, sx, sy, AngleUnit.DEGREES, sh);
-
-        // Waypoints -> positions array
-        JSONArray pts = root.getJSONArray("points");
-        positions = new Pose2D[pts.length()];
-        for (int i = 0; i < pts.length(); i++) {
-            Object pObj = pts.get(i);
-            double x = 0;
-            double y = 0;
-            double h = 0;
-            if (pObj instanceof JSONArray) {
-                JSONArray p = (JSONArray) pObj;
-                x = p.optDouble(0, 0);
-                y = p.optDouble(1, 0);
-                h = p.optDouble(2, 0);
-            } else if (pObj instanceof JSONObject) {
-                JSONObject p = (JSONObject) pObj;
-                x = p.optDouble("x", 0);
-                y = p.optDouble("y", 0);
-                h = p.optDouble("h", 0);
-            }
-            positions[i] = new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, h);
-        }
-
-        // Tags (optional)
-        JSONArray jtags = root.optJSONArray("tags");
-        if (jtags != null) {
-            tags = new PathServer.Tag[jtags.length()];
-            for (int i = 0; i < jtags.length(); i++) {
-                JSONObject t = jtags.getJSONObject(i);
-                PathServer.Tag tag = new PathServer.Tag(
-                        t.getString("name"),
-                        t.optDouble("value", 0.0),
-                        t.getInt("index")
-                );
-                tags[i] = tag;
-            }
-            Arrays.sort(tags);
-        } else {
-            tags = new PathServer.Tag[0];
-        }
         br.close();
+        route = PathRoute.fromJson(new JSONObject(sb.toString()));
+        alliance = route.alliance;
     }
 
     @Override
     public void init() {
-        GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
-        pinpointDriver.resetPosAndIMU();
-        driveTrain = new OdometryHolonomicDrivetrain(
-                hardwareMap.get(DcMotorEx.class, "backLeft"),
-                hardwareMap.get(DcMotorEx.class, "backRight"),
-                hardwareMap.get(DcMotorEx.class, "frontLeft"),
-                hardwareMap.get(DcMotorEx.class, "frontRight"),
-                new GoBildaPinpointOdometry(pinpointDriver)
-        );
+        Scheduler.reset();
+        follower = Constants.create(hardwareMap);
+        PathPlanRunner.publishRobotLimits(follower);   // lets the planner preview timing with real limits
+        odometry = new FollowerOdometryModule(follower);
+
         turret = new Turret(
                 hardwareMap.get(DcMotorEx.class, "shooterTop"),
                 hardwareMap.get(DcMotorEx.class, "shooterBottom"),
@@ -191,9 +124,6 @@ public abstract class BaseAuto extends OpMode {
         );
         turret.resetTurretEncoder();
 
-//        driveTrain.setVelocityPIDFCoefficients(p, i, d, f);
-        driveTrain.setPositionP(positionP);
-
         intake = new Intake(
                 hardwareMap.get(DcMotorEx.class, "intake"),
                 hardwareMap.get(DistanceSensor.class, "lowerDistanceSensor"),
@@ -203,7 +133,6 @@ public abstract class BaseAuto extends OpMode {
         ledIndicator = new LEDIndicator(hardwareMap.get(GoBildaPrismDriver.class, "prism"));
         ledIndicator.setState(Intake.IntakeState.AMBIENT);
         turret.setEncoderOffset();
-//        turret.resetTurretEncoder();
 
         telemetry.addData("Turret Angle", turret.getTurretCurrentAngle());
         telemetry.update();
@@ -211,7 +140,7 @@ public abstract class BaseAuto extends OpMode {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
         limelight.start();
-        autoAligner = new AutoAligner(driveTrain, turret, limelight, false);
+        autoAligner = new AutoAligner(odometry, turret, limelight, false);
 
         AutoAligner.farShooterTolerance = 80;
         AutoAligner.farTurretTolerance = 6;
@@ -221,14 +150,13 @@ public abstract class BaseAuto extends OpMode {
 
     @Override
     public void init_loop() {
-        driveTrain.updatePosition();
+        follower.update();
     }
 
     @Override
     public void start() {
         if (readJson) {
             try {
-                // If a filename is specified, read from assets file
                 if (jsonFilename != null && !jsonFilename.isEmpty()) {
                     InputStream is = hardwareMap.appContext.getAssets().open(jsonFilename);
                     jsonReader = new InputStreamReader(is);
@@ -238,217 +166,228 @@ public abstract class BaseAuto extends OpMode {
                 throw new RuntimeException(e);
             }
         }
-        driveTrain.setTolerance(tolerance);
-        driveTrain.setPosition(startPose);
-        driveTrain.setVelocity(velocity);
-        Arrays.sort(tags);
-        driveTrain.setPositionDrive(positions);
+        if (route == null) route = PathRoute.empty();
+        if (alliance == null) alliance = route.alliance;
+        if ("red".equals(alliance)) autoAligner.setRed(); else autoAligner.setBlue();
+
+        follower.setPose(PedroPathBuilder.toPose(route.start));
+
+        PedroPathBuilder.Options options = new PedroPathBuilder.Options();
+        options.policy = new PedroPathBuilder.SegmentPolicy() {
+            @Override
+            public boolean stopsBefore(int segmentIndex, PathRoute.Segment segment, List<PathServer.Tag> tags) {
+                if (PedroPathBuilder.hasTag(tags, "pause")) return true;
+                for (PathServer.Tag t : tags) if ("launchArtifacts".equals(t.name) && t.value > 0) return true;
+                return false;
+            }
+
+            @Override
+            public boolean isCustom(int segmentIndex, PathRoute.Segment segment, List<PathServer.Tag> tags) {
+                return PedroPathBuilder.hasTag(tags, "autoArtifactPickup");
+            }
+        };
+        // Segments tagged autoAim keep their heading pointed so the turret can reach the goal.
+        options.headings = (segmentIndex, segment, tags, startH, endH) ->
+                PedroPathBuilder.hasTag(tags, "autoAim") ? autoAimInterpolator() : null;
+
+        chunks = PedroPathBuilder.build(route, options);
+        routeCommand = PathPlanRunner.build(follower, chunks, this);
+
+        // Runs for the whole auto and shoots whenever startLaunch turned shooting on.
+        shootOnMoveService = Command.build()
+                .setExecute(() -> { if (isShooting) shootLoop(0); })
+                .setDone(() -> false);
+
         turret.close();
-
-//        if (autoAligner.getDistanceToGoal() > AutoAligner.closeDist) {
-//            shooterDelay = 0.5;
-//        }
-    }
-
-    public void autoAim(int pointIndex) {
-        Pose2D curTarget = positions[pointIndex];
-        positions[pointIndex] = new Pose2D(DistanceUnit.INCH, curTarget.getX(DistanceUnit.INCH),
-                curTarget.getY(DistanceUnit.INCH), AngleUnit.DEGREES, autoAligner.getDrivetrainAutoAlignAngleWithTurret());
-        double hoodAngle = autoAligner.getOptimalHoodAngle() - (autoAligner.useShootMove ? autoAligner.lastVelPar * hoodAngleVelScale : 0);
-        turret.setHoodAngle(hoodAngle);
-        wantedShooterVelocity = autoAligner.getShooterVelocityFromAngle(hoodAngle);
-        turret.setShooterVelocity(wantedShooterVelocity);
-
-//        Log.d("Loop Time", "Auto Aim time: " + (runtime.time() - start));
-    }
-
-    public void shoot(int pointIndex) {
-        turret.open();
-        autoAim(pointIndex);
-        double shootingIntakeVelocity = 0;
-
-        if (shooterTimer <= 0 && autoAligner.readyToShoot()) {
-            shootingIntakeVelocity = 2800;
-        }
-
-        intake.setVelocity(shootingIntakeVelocity);
+        Scheduler.schedule(routeCommand, shootOnMoveService);
     }
 
     @Override
     public void loop() {
-        driveTrain.updatePosition();
-        Pose2D pos = driveTrain.getPosition();
-        driveTrain.drive();
+        follower.update();
+        Scheduler.execute();
 
-//        ledIndicator.setState(Intake.IntakeState.AMBIENT);
-
+        Pose2D pos = odometry.getPosition();
         autoAligner.updateInterpolation(pos.getX(DistanceUnit.INCH), pos.getY(DistanceUnit.INCH));
 
         double wantedTurretAngle = autoAligner.getTurretAutoAlignAngle();
         turret.setTurretAngle(wantedTurretAngle + autoAligner.lastVelPerp * turretPreturnConstant);
-//        Log.d("Velocity", "Vel perp: " + autoAligner.lastVelPerp);
 
-//        Log.d("Turret Angle", "Pinpoint Pos: " + pos.getX(DistanceUnit.INCH) + ", " + pos.getY(DistanceUnit.INCH));
-//        double turretPos = turret.getTurretCurrentAngle();
-//        Log.d("Turret Angle", "Current Turret Angle: " + turretPos);
-//        Log.d("Turret Angle", "Wanted Turret Angle: " + wantedTurretAngle);
-//        Log.d("Turret Angle", "Wanted Turret Angle 2: " + turret.getTurretTargetAngle());
-//        Log.d("Turret Angle", "Difference: " + (wantedTurretAngle - turretPos));
-
-        double curTime = runtime.seconds();
-        double dt = curTime - lastTime;
-        lastTime = curTime;
-//        Log.d("Loop Time", "dt: " + dt);
-
-        if (pauseTimeLeft <= 0) {
-            if (searchingForArtifacts) {
-                if (driveTrain.getNextPointIndex() > searchEndIndex) {
-                    searchingForArtifacts = false;
-                    pickingUp = false;
-                    searchEndIndex = -1;
-                    intake.setVelocity(0);
-//                    driveTrain.setVelocity(velocity);
-                }
-                HuskyLens.Block largestBlock = Stream.of(huskyLens.blocks()).max(Comparator.comparingDouble(block -> block.width * block.height)).orElse(null);
-
-                double error = 0;
-                if (largestBlock != null) {
-                    double targetX = largestBlock.x;
-                    error = (targetX - huskyLensCenter) * huskyLensXP;
-                    if (!pickingUp) {
-                        intake.setVelocity(2800);
-                        pickingUp = true;
-                    }
-                }
-
-                if (pickingUp) {
-                    positions[searchEndIndex] = new Pose2D(
-                            DistanceUnit.INCH,
-                            pos.getX(DistanceUnit.INCH) + error,
-                            67,
-                            AngleUnit.DEGREES,
-                            pos.getHeading(AngleUnit.DEGREES)
-                    );
-                }
-            }
-            int nextPointIndex = driveTrain.getNextPointIndex();
-
-            if (nextPointIndex == autoAlignIndex && nextPointIndex != -1) {
-                autoAim(nextPointIndex);
-            } else {
-                autoAlignIndex = -1;
-            }
-
-            if (isShooting) {
-                shoot(nextPointIndex);
-            }
-
-            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
-                PathServer.Tag currTag = tags[lastTagIndex];
-                switch (currTag.name) {
-                    case "velocity":
-                        velocity = (int) (currTag.value * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH);
-                        driveTrain.setVelocity(velocity);
-                        break;
-                    case "pause":
-                        if (currTag.value <= 0) break;
-                        pauseTimeLeft = currTag.value;
-                        pausedIndex = nextPointIndex;
-                        driveTrain.setPositionDrive(positions[nextPointIndex - 1]);
-                        break;
-                    case "intake":
-                        if (currTag.value <= 0) {
-                            intakeVelocity = 0;
-                            intake.stop();
-                        } else {
-                            intakeVelocity = (int) Math.round(currTag.value);
-                            intake.setVelocity(intakeVelocity);
-                        }
-                        break;
-                    case "autoAim": {
-                        if (alliance.equals("red")) {
-                            autoAligner.setRed();
-                        } else {
-                            autoAligner.setBlue();
-                        }
-                        autoAlignIndex = nextPointIndex;
-                        Pose2D curTarget2 = positions[nextPointIndex];
-                        positions[nextPointIndex] = new Pose2D(DistanceUnit.INCH, curTarget2.getX(DistanceUnit.INCH), curTarget2.getY(DistanceUnit.INCH), AngleUnit.DEGREES, autoAligner.getDrivetrainAutoAlignAngleWithTurret());
-                        break;
-                    }
-                    case "shooterVelocity": {
-                        turret.setShooterVelocity(currTag.value);
-                        break;
-                    }
-                    case "hoodAngle": {
-                        turret.setHoodAngle(currTag.value);
-                        break;
-                    }
-                    case "launchArtifacts": {
-                        if (currTag.value <= 0) break;
-                        turret.open();
-                        pauseTimeLeft = currTag.value;
-                        pausedIndex = nextPointIndex;
-                        driveTrain.setVelocity(30);
-                        driveTrain.setPositionDrive(positions[nextPointIndex - 1]);
-                        shooterTimer = shooterDelay;
-                        isShooting = true;
-                        break;
-                    }
-                    case "startLaunch": {
-                        turret.open();
-                        isShooting = true;
-                        break;
-                    }
-                    case "endLaunch": {
-                        turret.close();
-                        intake.setVelocity(intakeVelocity);
-                        isShooting = false;
-                        break;
-                    }
-                    case "tolerance": {
-                        driveTrain.setTolerance(currTag.value);
-                        break;
-                    }
-                    case "shootWhileMove": {
-                        autoAligner.useShootMove = currTag.value == 1;
-                        break;
-                    }
-                    case "autoArtifactPickup": {
-//                        driveTrain.setVelocity(searchVelocity);
-                        searchEndIndex = nextPointIndex;
-                        pickingUp = false;
-                        searchingForArtifacts = true;
-                        break;
-                    }
-                }
-                lastTagIndex++;
-            }
-        } else {
-            if (isShooting) {
-                shoot(pausedIndex - 1);
-            }
-            pauseTimeLeft -= dt;
-            shooterTimer -= dt;
-
-            if (pauseTimeLeft <= 0) {
-                driveTrain.setVelocity(velocity);
-
-                pauseTimeLeft = 0;
-                driveTrain.setPositionDrive(positions, pausedIndex);
-                if (isShooting) {
-                    turret.close();
-                    intake.setVelocity(intakeVelocity);
-                    isShooting = false;
-                }
-            } else {
-                driveTrain.setPositionDrive(positions[pausedIndex - 1]);
-            }
-        }
+        telemetry.addData("Pose", "%.1f, %.1f, %.1f", pos.getX(DistanceUnit.INCH),
+                pos.getY(DistanceUnit.INCH), pos.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("Following", follower.following());
+        telemetry.addData("Sub-path", follower.pathIndex());
+        telemetry.addData("Route done", routeCommand != null && !routeCommand.isScheduled());
+        telemetry.update();
     }
 
     @Override
     public void stop() {
+        Scheduler.reset();
+        if (follower != null) follower.stop();
         ledIndicator.setState(Intake.IntakeState.OFF);
+    }
+
+    // ---- aiming helpers -------------------------------------------------------------------
+
+    // Heading interpolator that always returns the drivetrain angle the aligner wants (radians).
+    private Interpolator autoAimInterpolator() {
+        return (curve, t) -> Math.toRadians(autoAligner.getDrivetrainAutoAlignAngleWithTurret());
+    }
+
+    // Points hood and shooter at the goal.
+    public void autoAim() {
+        double hoodAngle = autoAligner.getOptimalHoodAngle()
+                - (autoAligner.useShootMove ? autoAligner.lastVelPar * hoodAngleVelScale : 0);
+        turret.setHoodAngle(hoodAngle);
+        wantedShooterVelocity = autoAligner.getShooterVelocityFromAngle(hoodAngle);
+        turret.setShooterVelocity(wantedShooterVelocity);
+    }
+
+    // One loop of shooting: aim, and feed when the shooter is ready and the delay has passed.
+    private void shootLoop(double delayLeft) {
+        turret.open();
+        autoAim();
+        intake.setVelocity(delayLeft <= 0 && autoAligner.readyToShoot() ? shootingIntakeVelocity : 0);
+    }
+
+    // ---- tags ------------------------------------------------------------------------------
+
+    @Override
+    public Command commandFor(String name, double value) {
+        return commandFor(new PathServer.Tag(name, value, -1), null);
+    }
+
+    @Override
+    public Command commandFor(PathServer.Tag tag, PathPlanRunner.TagContext ctx) {
+        switch (tag.name) {
+            case "intake":
+                return Commands.instant(() -> {
+                    if (tag.value <= 0) {
+                        intakeVelocity = 0;
+                        intake.stop();
+                    } else {
+                        intakeVelocity = (int) Math.round(tag.value);
+                        intake.setVelocity(intakeVelocity);
+                    }
+                });
+
+            case "autoAim":
+                // Heading is handled by the interpolator; keep hood and shooter tracking the goal
+                // while this segment is being followed.
+                return Command.build()
+                        .setStart(() -> { if ("red".equals(alliance)) autoAligner.setRed(); else autoAligner.setBlue(); })
+                        .setExecute(this::autoAim)
+                        .setDone(() -> ctx == null || ctx.segmentPassed());
+
+            case "shooterVelocity":
+                return Commands.instant(() -> turret.setShooterVelocity(tag.value));
+
+            case "hoodAngle":
+                return Commands.instant(() -> turret.setHoodAngle(tag.value));
+
+            case "launchArtifacts":
+                if (tag.value <= 0) return null;
+                return launchArtifacts(tag.value, ctx);
+
+            case "startLaunch":
+                return Commands.instant(() -> {
+                    turret.open();
+                    isShooting = true;
+                });
+
+            case "endLaunch":
+                return Commands.instant(() -> {
+                    isShooting = false;
+                    turret.close();
+                    intake.setVelocity(intakeVelocity);
+                });
+
+            case "shootWhileMove":
+                return Commands.instant(() -> autoAligner.useShootMove = tag.value == 1);
+
+            case "autoArtifactPickup":
+                return null;   // drives its own segment, see driveSegment()
+
+            case "tolerance":
+            default:
+                return null;
+        }
+    }
+
+    // Stopped shooting sequence: hold the node (turning towards the goal if the turret cannot
+    // reach it), spin up, feed once ready, and close again after <seconds>.
+    private Command launchArtifacts(double seconds, PathPlanRunner.TagContext ctx) {
+        final ElapsedTime timer = new ElapsedTime();
+        final Pose[] holdPose = new Pose[1];
+        return Command.build()
+                .setStart(() -> {
+                    timer.reset();
+                    turret.open();
+                    holdPose[0] = ctx != null ? ctx.chunk.startPose : follower.pose();
+                })
+                .setExecute(() -> {
+                    shootLoop(shooterDelay - timer.seconds());
+                    // Re-aim the held pose if the turret alone cannot reach the goal.
+                    double wantedDeg = autoAligner.getDrivetrainAutoAlignAngleWithTurret();
+                    double currentDeg = Math.toDegrees(holdPose[0].heading());
+                    double diff = Math.abs(normalize(wantedDeg - currentDeg));
+                    if (diff > launchHeadingRetargetDeg) {
+                        holdPose[0] = holdPose[0].withHeading(Math.toRadians(wantedDeg));
+                        follower.hold(holdPose[0]);
+                    }
+                })
+                .setDone(() -> timer.seconds() >= seconds)
+                .setEnd(end -> {
+                    turret.close();
+                    intake.setVelocity(intakeVelocity);
+                });
+    }
+
+    // Drives an autoArtifactPickup segment: follow the planned line, but once the HuskyLens sees
+    // an artifact, run the intake and steer towards it (x corrected by the camera error, y to the
+    // pickup line) until the follower arrives.
+    @Override
+    public Command driveSegment(PathServer.Tag[] tags, PathPlanRunner.TagContext ctx) {
+        final Pose start = ctx.chunk.startPose;
+        final Pose end = ctx.chunk.endPose;
+        final boolean[] pickingUp = new boolean[1];
+        final Pose[] target = new Pose[1];
+        return Command.build()
+                .setStart(() -> {
+                    pickingUp[0] = false;
+                    target[0] = end;
+                    follower.follow(Paths.line(start, end).linear(start.heading(), end.heading()));
+                })
+                .setExecute(() -> {
+                    HuskyLens.Block largestBlock = Stream.of(huskyLens.blocks())
+                            .max(Comparator.comparingDouble(block -> block.width * block.height))
+                            .orElse(null);
+                    if (largestBlock == null) return;
+
+                    double error = (largestBlock.x - huskyLensCenter) * huskyLensXP;
+                    if (!pickingUp[0]) {
+                        intake.setVelocity(shootingIntakeVelocity);
+                        pickingUp[0] = true;
+                    }
+                    Pose here = follower.pose();
+                    Pose wanted = new Pose(here.x() + error, huskyLensTargetY, here.heading());
+                    if (wanted.distance(target[0]) > huskyLensRetargetInches && here.distance(wanted) > PedroPathBuilder.MIN_SEGMENT_LENGTH_IN) {
+                        target[0] = wanted;
+                        follower.follow(Paths.line(here, wanted).constant(here.heading()));
+                    }
+                })
+                .setDone(() -> !follower.following())
+                .setEnd(condition -> {
+                    pickingUp[0] = false;
+                    intake.setVelocity(0);
+                });
+    }
+
+    private static double normalize(double degrees) {
+        double a = degrees;
+        while (a > 180) a -= 360;
+        while (a <= -180) a += 360;
+        return a;
     }
 }

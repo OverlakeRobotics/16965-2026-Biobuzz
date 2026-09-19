@@ -14,6 +14,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.code.parts.Turret;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
+import org.firstinspires.ftc.teamcode.system.OdometryModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +57,9 @@ public class AutoAligner {
     public double angleOffset = 0;
     private int targetAprilID;
     private int sideFlipMultiplier;
-    private final OdometryHolonomicDrivetrain driveTrain;
+    // Any pose source: the library drivetrain (TeleOp) or a FollowerOdometryModule wrapping the
+    // Pedro follower (autonomous). Only getPosition/setPosition/getXVelocity/getYVelocity are used.
+    private final OdometryModule driveTrain;
     private final Turret turret;
     private final Limelight3A limelight;
 
@@ -128,7 +131,11 @@ public class AutoAligner {
     };
 
     public AutoAligner(OdometryHolonomicDrivetrain driveTrain, Turret turret, Limelight3A limelight, boolean isRed) {
-        this.driveTrain = driveTrain;
+        this(asOdometry(driveTrain), turret, limelight, isRed);
+    }
+
+    public AutoAligner(OdometryModule poseSource, Turret turret, Limelight3A limelight, boolean isRed) {
+        this.driveTrain = poseSource;
         this.turret = turret;
         this.limelight = limelight;
 
@@ -137,6 +144,19 @@ public class AutoAligner {
         } else {
             setBlue();
         }
+    }
+
+    // Exposes the library drivetrain's pose and velocity as an OdometryModule.
+    private static OdometryModule asOdometry(OdometryHolonomicDrivetrain dt) {
+        return new OdometryModule() {
+            @Override public Pose2D getPosition() { return dt.getPosition(); }
+            @Override public void updatePosition() { /* the drivetrain updates itself in the OpMode loop */ }
+            @Override public void setPosition(Pose2D position) { dt.setPosition(position); }
+            @Override public void reset() { dt.odometry.reset(); }
+            @Override public double getXVelocity() { return dt.getXVelocity(); }
+            @Override public double getYVelocity() { return dt.getYVelocity(); }
+            @Override public double getAngularVelocity() { return dt.getAngularVelocity(); }
+        };
     }
 
     public void setBlue() {

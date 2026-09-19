@@ -38,6 +38,11 @@ public class Constants {
 
     // Pod type and directions confirmed by the Pinpoint tuner. Offsets are deliberately the same
     // -84 mm / -168 mm the existing TeleOps pass to setOffsets() rather than the tuner's estimate.
+    // TODO(offsets): conflicts with code/helpers/BaseTeleOp.java, components/GoBildaPinpointOdometry.java
+    //   and examples/TeleOpFieldCentric.java, which all use xOffset = 72 mm / yOffset = -156 mm
+    //   (with "-84 / -168" left in a comment as the previous value). The Pedro autonomous now
+    //   localizes with THESE values while TeleOp localizes with 72 / -156. Measure the pod
+    //   offsets on the robot and make both agree before relying on auto->teleop pose handoff.
     public static PinpointConfig localizerConfig = new PinpointConfig(
             c -> {
                 c.name.set("pinpoint");
