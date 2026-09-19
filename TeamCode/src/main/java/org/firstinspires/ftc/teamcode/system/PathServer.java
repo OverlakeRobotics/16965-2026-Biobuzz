@@ -15,19 +15,30 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
 // Server that runs on the robot to connect with the Overlake Robotics Path Planner and allow
-// path uploading.
+// path uploading. Uploads are parsed by PathRoute.fromJson() (both the version 1 and version 2
+// payloads are accepted) and the parsed route is available through getRoute() for
+// PedroPathBuilder. The older getPath()/getStartPose()/getTags() accessors keep working.
+//
+// Endpoints (all CORS enabled):
+//   POST /points  upload a route            -> {ok, version, points, segments, tags}
+//   GET  /pose    last reported robot pose  -> {ok, x, y, h, t}   (inches, degrees)
+//   GET  /start   start pose of the route   -> {ok, x, y, h}
+//   GET  /config  alliance, tags and limits -> {ok, version, alliance, tags:[{index, segment, name, value}],
+//                                               robot:{maxSpeedInS, maxStrafeSpeedInS, maxDecelInS2, maxAccelInS2}}
+// The robot limits come from setRobotLimits(), which the OpMode calls once at init with the
+// numbers from its Pedro Foresight config (inches and seconds). They let the web app preview
+// timing with real values. Missing values are published as null.
 @Config
 public class PathServer extends NanoHTTPD {
     private static final int PORT = 8099;
     private static final String JSON = "application/json";
 
     public static volatile double[][] RAW_POINTS = {{0, 0, 0}};
-    public static volatile double VELOCITY_IN_S = 0.0;
-    public static volatile double TOLERANCE_IN = 0.0;
     public static volatile String ALLIANCE = "unknown";
 
     private static volatile double ROBOT_X_IN = 0.0;
@@ -36,20 +47,40 @@ public class PathServer extends NanoHTTPD {
     private static volatile long ROBOT_TS_MS = 0L;
 
     public static final class Tag implements Comparable<Tag> {
-        public final int index;
+        public final int index;      // planner node index into [start, ...points] (0 = start pose)
+        public final int segment;    // resolved planner segment index, or -1 if unknown
         public final String name;
         public final double value;
 
         public Tag(String name, double value, int index) {
+            this(name, value, index, -1);
+        }
+
+        public Tag(String name, double value, int index, int segment) {
             this.name = name;
             this.value = value;
             this.index = index;
+            this.segment = segment;
         }
 
-        @Override public int compareTo(Tag other) { return this.index - other.index; }
+        @Override public int compareTo(Tag other) {
+            if (this.segment != other.segment && this.segment >= 0 && other.segment >= 0) {
+                return this.segment - other.segment;
+            }
+            return this.index - other.index;
+        }
+
+        @Override public String toString() {
+            return name + "=" + value + "@node" + index + "/seg" + segment;
+        }
     }
 
-    private static volatile Tag[] TAGS = new Tag[0];
+    private static volatile Double ROBOT_MAX_SPEED = null;
+    private static volatile Double ROBOT_MAX_STRAFE_SPEED = null;
+    private static volatile Double ROBOT_MAX_DECEL = null;
+    private static volatile Double ROBOT_MAX_ACCEL = null;
+
+    private static volatile PathRoute ROUTE = PathRoute.empty();
     private static volatile PathServer instance;
 
     // Starts the embedded HTTP server.
@@ -70,6 +101,16 @@ public class PathServer extends NanoHTTPD {
         s.stop();
         instance = null;
         System.out.println("PathServer stopped.");
+    }
+
+    // Returns the most recently uploaded route (segments + tags), or an empty route.
+    public static PathRoute getRoute() {
+        return ROUTE;
+    }
+
+    // Replaces the current route, for example one loaded from an asset file.
+    public static void setRoute(PathRoute route) {
+        applyRoute(route != null ? route : PathRoute.empty());
     }
 
     // Returns the uploaded path points as Pose2D waypoints, excluding the start pose.
@@ -97,27 +138,28 @@ public class PathServer extends NanoHTTPD {
         return new Pose2D(DistanceUnit.INCH, s[0], s[1], AngleUnit.DEGREES, s[2]);
     }
 
-    // Returns the configured path velocity.
-    public static double getVelocity() {
-        return VELOCITY_IN_S;
-    }
-
-    // Returns the configured path tolerance.
-    public static double getTolerance() {
-        return TOLERANCE_IN;
-    }
-
-    // Returns a snapshot of the current tags array.
+    // Returns a snapshot of the current tags (each tag knows its segment index).
     public static Tag[] getTags() {
-        Tag[] src = TAGS;
-        Tag[] copy = new Tag[src.length];
-        System.arraycopy(src, 0, copy, 0, src.length);
-        return copy;
+        List<Tag> src = ROUTE.tags;
+        return src.toArray(new Tag[0]);
     }
 
     // Returns the currently selected alliance string.
     public static String getAlliance() {
         return ALLIANCE;
+    }
+
+    // Publishes the robot's speed limits (inches, seconds) in /config and the upload response.
+    // maxAccel may be null when the robot has no acceleration constraint.
+    public static void setRobotLimits(double maxSpeed, double maxStrafeSpeed, double maxDecel, Double maxAccel) {
+        ROBOT_MAX_SPEED = finiteOrNull(maxSpeed);
+        ROBOT_MAX_STRAFE_SPEED = finiteOrNull(maxStrafeSpeed);
+        ROBOT_MAX_DECEL = finiteOrNull(maxDecel);
+        ROBOT_MAX_ACCEL = maxAccel == null ? null : finiteOrNull(maxAccel);
+    }
+
+    private static Double finiteOrNull(double v) {
+        return Double.isFinite(v) ? v : null;
     }
 
     // Updates the robot pose reported by the /pose endpoint.
@@ -139,16 +181,18 @@ public class PathServer extends NanoHTTPD {
 
             if (Method.POST.equals(method) && "/points".equals(uri)) {
                 JSONObject payload = readJsonBody(session);
-                applyPayload(payload);
+                PathRoute route = PathRoute.fromJson(payload);
+                applyRoute(route);
 
                 try { FtcDashboard.getInstance().updateConfig(); } catch (Throwable ignored) {}
 
                 JSONObject ok = new JSONObject()
                         .put("ok", true)
+                        .put("version", route.version)
                         .put("points", RAW_POINTS.length)
-                        .put("velocity", VELOCITY_IN_S)
-                        .put("tolerance", TOLERANCE_IN)
-                        .put("tags", TAGS.length);
+                        .put("segments", route.segments.size())
+                        .put("tags", route.tags.size())
+                        .put("robot", robotToJson());
                 return withCors(newFixedLengthResponse(Response.Status.OK, JSON, ok.toString()));
             }
 
@@ -173,12 +217,13 @@ public class PathServer extends NanoHTTPD {
             }
 
             if (Method.GET.equals(method) && "/config".equals(uri)) {
+                PathRoute route = ROUTE;
                 JSONObject out = new JSONObject()
                         .put("ok", true)
-                        .put("velocity", VELOCITY_IN_S)
-                        .put("tolerance", TOLERANCE_IN)
+                        .put("version", route.version)
                         .put("alliance", ALLIANCE)
-                        .put("tags", tagsToJson(TAGS));
+                        .put("tags", tagsToJson(route.tags))
+                        .put("robot", robotToJson());
                 return withCors(newFixedLengthResponse(Response.Status.OK, JSON, out.toString()));
             }
 
@@ -212,58 +257,34 @@ public class PathServer extends NanoHTTPD {
         return new JSONObject(body);
     }
 
-    // Applies the uploaded JSON payload to RAW_POINTS/config fields.
-    private static void applyPayload(JSONObject obj) throws JSONException {
-        JSONArray start = obj.optJSONArray("start");
-        double sx = (start != null) ? start.optDouble(0, 0.0) : 0.0;
-        double sy = (start != null) ? start.optDouble(1, 0.0) : 0.0;
-        double sh = (start != null) ? start.optDouble(2, 0.0) : 0.0;
+    // Publishes a parsed route to the static fields read by the accessors above.
+    private static void applyRoute(PathRoute route) {
+        double[][] pts = new double[route.points.length + 1][3];
+        pts[0] = route.start.clone();
+        for (int i = 0; i < route.points.length; i++) pts[i + 1] = route.points[i].clone();
 
-        JSONArray ptsArr = obj.optJSONArray("points");
-        int n = (ptsArr != null) ? ptsArr.length() : 0;
-
-        double[][] pts = new double[n + 1][3];
-        pts[0][0] = sx; pts[0][1] = sy; pts[0][2] = sh;
-
-        for (int i = 0; i < n; i++) {
-            JSONArray p = ptsArr.getJSONArray(i);
-            pts[i + 1][0] = p.optDouble(0, 0.0);
-            pts[i + 1][1] = p.optDouble(1, 0.0);
-            pts[i + 1][2] = (p.length() >= 3) ? p.optDouble(2, 0.0) : 0.0;
-        }
+        ROUTE = route;
         RAW_POINTS = pts;
-
-        VELOCITY_IN_S = obj.optDouble("velocity", VELOCITY_IN_S);
-        TOLERANCE_IN  = obj.optDouble("tolerance", TOLERANCE_IN);
-
-        String alliance = obj.optString("alliance", ALLIANCE);
-        if (alliance == null || alliance.trim().isEmpty()) alliance = "unknown";
-        ALLIANCE = alliance.trim().toLowerCase();
-
-        JSONArray tagsArr = obj.optJSONArray("tags");
-        if (tagsArr == null) {
-            TAGS = new Tag[0];
-            return;
-        }
-
-        Tag[] out = new Tag[tagsArr.length()];
-        for (int i = 0; i < tagsArr.length(); i++) {
-            JSONObject t = tagsArr.getJSONObject(i);
-            out[i] = new Tag(
-                    t.optString("name", ""),
-                    t.optDouble("value", 0.0),
-                    t.optInt("index", 0)
-            );
-        }
-        TAGS = out;
+        ALLIANCE = route.alliance;
     }
 
-    // Converts the tag array into a JSON array for the /config endpoint.
-    private static JSONArray tagsToJson(Tag[] tags) throws JSONException {
+    // Robot limits for the /config endpoint; null entries become JSON null.
+    private static JSONObject robotToJson() throws JSONException {
+        JSONObject r = new JSONObject();
+        r.put("maxSpeedInS", ROBOT_MAX_SPEED != null ? ROBOT_MAX_SPEED : JSONObject.NULL);
+        r.put("maxStrafeSpeedInS", ROBOT_MAX_STRAFE_SPEED != null ? ROBOT_MAX_STRAFE_SPEED : JSONObject.NULL);
+        r.put("maxDecelInS2", ROBOT_MAX_DECEL != null ? ROBOT_MAX_DECEL : JSONObject.NULL);
+        r.put("maxAccelInS2", ROBOT_MAX_ACCEL != null ? ROBOT_MAX_ACCEL : JSONObject.NULL);
+        return r;
+    }
+
+    // Converts the tag list into a JSON array for the /config endpoint.
+    private static JSONArray tagsToJson(List<Tag> tags) throws JSONException {
         JSONArray arr = new JSONArray();
         for (Tag t : tags) {
             arr.put(new JSONObject()
                     .put("index", t.index)
+                    .put("segment", t.segment)
                     .put("name", t.name)
                     .put("value", t.value));
         }
