@@ -163,8 +163,9 @@ public final class PathRoute {
         // Tags. "index" is an index into [start, ...points] (0 = start pose). A tag attached to a
         // node fires when the robot leaves that node, i.e. at the start of the segment that begins
         // there: node k is left by the segment containing points[k]. Version 2 tags also carry
-        // "segment" directly; -1 means the start pose (fire before segment 0) and any value past
-        // the last segment means the end node (fire once the route is complete).
+        // "segment": the index of the segment whose END the tag sits at (-1 = the start pose), so
+        // the tag fires at the start of segment + 1. That gives 0 for the start pose (fire before
+        // segment 0) and segments.size() for the end node (fire once the route is complete).
         int totalPoints = segments.isEmpty() ? 0 : cumulative[cumulative.length - 1];
         List<PathServer.Tag> tags = new ArrayList<>();
         JSONArray tagsArr = root.optJSONArray("tags");
@@ -176,7 +177,7 @@ public final class PathRoute {
                 int pointIndex = t.optInt("index", 0);
                 int segment;
                 if (t.has("segment")) {
-                    segment = t.optInt("segment", 0);
+                    segment = t.optInt("segment", -1) + 1;
                     if (segment < 0) segment = 0;
                 } else if (pointIndex >= totalPoints) {
                     segment = segments.size();
