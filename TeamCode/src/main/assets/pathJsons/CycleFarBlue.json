@@ -1,0 +1,699 @@
+{
+  "version": 1,
+  "createdAt": "2026-04-18T19:29:52.342Z",
+  "alliance": "blue",
+  "start": {
+    "x": -64,
+    "y": 33,
+    "h": 90
+  },
+  "points": [
+    {
+      "x": -64,
+      "y": 33,
+      "h": 90
+    },
+    {
+      "x": -65,
+      "y": 66,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 54,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -38,
+      "y": 24,
+      "h": 90
+    },
+    {
+      "x": -38,
+      "y": 63,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -48,
+      "y": 66,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -64,
+      "y": 33,
+      "h": 90
+    },
+    {
+      "x": -65,
+      "y": 66,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -42,
+      "y": 51,
+      "h": 90
+    },
+    {
+      "x": -42,
+      "y": 66,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -64,
+      "y": 33,
+      "h": 90
+    },
+    {
+      "x": -65,
+      "y": 66,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 54,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -54,
+      "y": 45,
+      "h": 90
+    }
+  ],
+  "segments": [
+    {
+      "type": "line",
+      "end": {
+        "x": -64,
+        "y": 33,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -64,
+          "y": 33,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -65,
+        "y": 66,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -65,
+          "y": 66,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 54,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 54,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -38,
+        "y": 24,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -38,
+          "y": 24,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -38,
+        "y": 63,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -38,
+          "y": 63,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -48,
+        "y": 66,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -48,
+          "y": 66,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -64,
+        "y": 33,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -64,
+          "y": 33,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -65,
+        "y": 66,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -65,
+          "y": 66,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -42,
+        "y": 51,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -42,
+          "y": 51,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -42,
+        "y": 66,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -42,
+          "y": 66,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -64,
+        "y": 33,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -64,
+          "y": 33,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -65,
+        "y": 66,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -65,
+          "y": 66,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 54,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 54,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": 45,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": 45,
+          "h": 90
+        }
+      ]
+    }
+  ],
+  "headingMode": "straight",
+  "endHeading": 90,
+  "velocity": 150,
+  "maxAccel": 40,
+  "tolerance": 6,
+  "snapInches": 3,
+  "robot": {
+    "length": 18,
+    "width": 18
+  },
+  "tags": [
+    {
+      "index": 2,
+      "name": "pause",
+      "value": 0.5
+    },
+    {
+      "index": 3,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 3,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 4,
+      "name": "launchArtifacts",
+      "value": 1.55
+    },
+    {
+      "index": 5,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 7,
+      "name": "launchArtifacts",
+      "value": 1.55
+    },
+    {
+      "index": 7,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 8,
+      "name": "pause",
+      "value": 0.5
+    },
+    {
+      "index": 8,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 9,
+      "name": "launchArtifacts",
+      "value": 1.55
+    },
+    {
+      "index": 1,
+      "name": "launchArtifacts",
+      "value": 2.75
+    },
+    {
+      "index": 1,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 1,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 10,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 10,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 11,
+      "name": "pause",
+      "value": 0.5
+    },
+    {
+      "index": 11,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 12,
+      "name": "launchArtifacts",
+      "value": 1.55
+    },
+    {
+      "index": 0,
+      "name": "shootWhileMove",
+      "value": 0
+    },
+    {
+      "index": 12,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 12,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 14,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 15,
+      "name": "launchArtifacts",
+      "value": 1.55
+    },
+    {
+      "index": 16,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 16,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 17,
+      "name": "pause",
+      "value": 0.5
+    },
+    {
+      "index": 17,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 19,
+      "name": "launchArtifacts",
+      "value": 1.55
+    },
+    {
+      "index": 0,
+      "name": "autoAim",
+      "value": 0
+    }
+  ],
+  "globals": [
+    {
+      "name": "launchTime",
+      "value": 1.55
+    },
+    {
+      "name": "wallPauseTime",
+      "value": 0.5
+    },
+    {
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "name": "wallTolerance",
+      "value": 8
+    },
+    {
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "name": "intakeSpeed",
+      "value": 2800
+    }
+  ],
+  "tagBindings": [
+    {
+      "tagIndex": 0,
+      "globalName": "wallPauseTime"
+    },
+    {
+      "tagIndex": 1,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 3,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 4,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 5,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 6,
+      "globalName": "wallTolerance"
+    },
+    {
+      "tagIndex": 7,
+      "globalName": "wallPauseTime"
+    },
+    {
+      "tagIndex": 8,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 9,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 11,
+      "globalName": "wallTolerance"
+    },
+    {
+      "tagIndex": 12,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 13,
+      "globalName": "wallTolerance"
+    },
+    {
+      "tagIndex": 14,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 15,
+      "globalName": "wallPauseTime"
+    },
+    {
+      "tagIndex": 16,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 17,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 19,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 20,
+      "globalName": "wallTolerance"
+    },
+    {
+      "tagIndex": 21,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 22,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 23,
+      "globalName": "wallTolerance"
+    },
+    {
+      "tagIndex": 24,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 25,
+      "globalName": "wallPauseTime"
+    },
+    {
+      "tagIndex": 26,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 27,
+      "globalName": "launchTime"
+    }
+  ]
+}

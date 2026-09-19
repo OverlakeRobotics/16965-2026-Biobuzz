@@ -15,8 +15,14 @@ public class GoBildaPinpointOdometry implements OdometryModule {
     private int headingPriority;
     private boolean doPositionReset;
     private boolean doHeadingReset;
+
+    public static final double yOffset = -156.0;
+    public static final double xOffset = 72.0;
+
+
     public GoBildaPinpointOdometry(GoBildaPinpointDriver pinpoint) {
         this.pinpoint = pinpoint;
+        this.pinpoint.setOffsets(xOffset, yOffset, DistanceUnit.MM);
 
         positionPriority = 0;
         headingPriority = 0;

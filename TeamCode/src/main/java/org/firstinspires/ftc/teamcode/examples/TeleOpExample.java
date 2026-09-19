@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
 
 
 // An example of a simple robot-centric TeleOp.
-@Disabled
+//@Disabled
 @Config
 @TeleOp(name = "TeleOp Example", group = "TeleOp")
 public class TeleOpExample extends OpMode {
@@ -34,7 +34,8 @@ public class TeleOpExample extends OpMode {
         driveTrain.setVelocityDrive(
                 -gamepad1.left_stick_y * velocity,
                 -gamepad1.left_stick_x * velocity,
-                -gamepad1.right_stick_x * velocity);
+                -gamepad1.right_stick_x * velocity
+        );
         // Power the motors
         driveTrain.drive();
     }

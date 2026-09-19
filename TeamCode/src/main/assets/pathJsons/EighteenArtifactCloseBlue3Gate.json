@@ -1,0 +1,771 @@
+{
+  "version": 1,
+  "createdAt": "2026-03-30T23:30:13.178Z",
+  "alliance": "blue",
+  "start": {
+    "x": 48,
+    "y": 48,
+    "h": 90
+  },
+  "points": [
+    {
+      "x": 14,
+      "y": 14,
+      "h": 90
+    },
+    {
+      "x": -11,
+      "y": 25,
+      "h": 90
+    },
+    {
+      "x": -12,
+      "y": 61,
+      "h": 90
+    },
+    {
+      "x": 8,
+      "y": 19,
+      "h": 90
+    },
+    {
+      "x": -12,
+      "y": 38,
+      "h": 60
+    },
+    {
+      "x": -13,
+      "y": 60,
+      "h": 60
+    },
+    {
+      "x": -11,
+      "y": 38,
+      "h": 90
+    },
+    {
+      "x": 9,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": -12,
+      "y": 38,
+      "h": 60
+    },
+    {
+      "x": -13,
+      "y": 60,
+      "h": 60
+    },
+    {
+      "x": -11,
+      "y": 38,
+      "h": 90
+    },
+    {
+      "x": 9,
+      "y": 18,
+      "h": 90
+    },
+    {
+      "x": 11,
+      "y": 30,
+      "h": 90
+    },
+    {
+      "x": 13,
+      "y": 56,
+      "h": 90
+    },
+    {
+      "x": 9,
+      "y": 21,
+      "h": 90
+    },
+    {
+      "x": 8,
+      "y": 16,
+      "h": 90
+    },
+    {
+      "x": -12,
+      "y": 38,
+      "h": 60
+    },
+    {
+      "x": -13,
+      "y": 60,
+      "h": 60
+    },
+    {
+      "x": -12,
+      "y": 38,
+      "h": 90
+    },
+    {
+      "x": 41,
+      "y": 16,
+      "h": 0
+    },
+    {
+      "x": 53,
+      "y": 16,
+      "h": 90
+    }
+  ],
+  "segments": [
+    {
+      "type": "line",
+      "end": {
+        "x": 14,
+        "y": 14,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 14,
+          "y": 14,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -11,
+        "y": 25,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -11,
+          "y": 25,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 61,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 61,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 8,
+        "y": 19,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 8,
+          "y": 19,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 38,
+        "h": 60
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 38,
+          "h": 60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 60,
+        "h": 60
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 60,
+          "h": 60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -11,
+        "y": 38,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -11,
+          "y": 38,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 9,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 9,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 38,
+        "h": 60
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 38,
+          "h": 60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 60,
+        "h": 60
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 60,
+          "h": 60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -11,
+        "y": 38,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -11,
+          "y": 38,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 9,
+        "y": 18,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 9,
+          "y": 18,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 11,
+        "y": 30,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 11,
+          "y": 30,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 13,
+        "y": 56,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 13,
+          "y": 56,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 9,
+        "y": 21,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 9,
+          "y": 21,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 8,
+        "y": 16,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 8,
+          "y": 16,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 38,
+        "h": 60
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 38,
+          "h": 60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 60,
+        "h": 60
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 60,
+          "h": 60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -12,
+        "y": 38,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": -12,
+          "y": 38,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 41,
+        "y": 16,
+        "h": 0
+      },
+      "samples": [
+        {
+          "x": 41,
+          "y": 16,
+          "h": 0
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 53,
+        "y": 16,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 53,
+          "y": 16,
+          "h": 90
+        }
+      ]
+    }
+  ],
+  "headingMode": "straight",
+  "endHeading": 0,
+  "velocity": 28,
+  "maxAccel": 40,
+  "tolerance": 6,
+  "snapInches": 1,
+  "robot": {
+    "length": 18,
+    "width": 18
+  },
+  "tags": [
+    {
+      "index": 2,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 4,
+      "name": "launchArtifacts",
+      "value": 1.35
+    },
+    {
+      "index": 6,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 6,
+      "name": "pause",
+      "value": 1
+    },
+    {
+      "index": 7,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 8,
+      "name": "launchArtifacts",
+      "value": 1.35
+    },
+    {
+      "index": 7,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 13,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 16,
+      "name": "launchArtifacts",
+      "value": 1.35
+    },
+    {
+      "index": 5,
+      "name": "velocity",
+      "value": 100
+    },
+    {
+      "index": 6,
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "index": 0,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 1,
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "index": 9,
+      "name": "velocity",
+      "value": 100
+    },
+    {
+      "index": 10,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 10,
+      "name": "pause",
+      "value": 1.2
+    },
+    {
+      "index": 10,
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "index": 11,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 12,
+      "name": "launchArtifacts",
+      "value": 1.35
+    },
+    {
+      "index": 11,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 15,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 15,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 0,
+      "name": "startLaunch",
+      "value": 0
+    },
+    {
+      "index": 1,
+      "name": "endLaunch",
+      "value": 0
+    },
+    {
+      "index": 9,
+      "name": "tolerance",
+      "value": 3
+    },
+    {
+      "index": 11,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 5,
+      "name": "tolerance",
+      "value": 3
+    },
+    {
+      "index": 7,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 1,
+      "name": "shootWhileMove",
+      "value": 0
+    },
+    {
+      "index": 17,
+      "name": "tolerance",
+      "value": 3
+    },
+    {
+      "index": 17,
+      "name": "velocity",
+      "value": 100
+    },
+    {
+      "index": 18,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 18,
+      "name": "pause",
+      "value": 1
+    },
+    {
+      "index": 19,
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "index": 19,
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "index": 19,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 20,
+      "name": "launchArtifacts",
+      "value": 10
+    }
+  ],
+  "globals": [
+    {
+      "name": "launchTime",
+      "value": 1.35
+    },
+    {
+      "name": "intakeSpeed",
+      "value": 2800
+    },
+    {
+      "name": "gateVelocity",
+      "value": 100
+    },
+    {
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "name": "gatePause",
+      "value": 1
+    },
+    {
+      "name": "secondGatePause",
+      "value": 1.2
+    },
+    {
+      "name": "bezierTolerance",
+      "value": 15
+    },
+    {
+      "name": "tolerance",
+      "value": 8
+    },
+    {
+      "name": "gateTolerance",
+      "value": 3
+    }
+  ],
+  "tagBindings": [
+    {
+      "tagIndex": 0,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 1,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 2,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 3,
+      "globalName": "gatePause"
+    },
+    {
+      "tagIndex": 5,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 7,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 8,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 9,
+      "globalName": "gateVelocity"
+    },
+    {
+      "tagIndex": 10,
+      "globalName": "velocity"
+    },
+    {
+      "tagIndex": 12,
+      "globalName": "velocity"
+    },
+    {
+      "tagIndex": 13,
+      "globalName": "gateVelocity"
+    },
+    {
+      "tagIndex": 14,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 15,
+      "globalName": "secondGatePause"
+    },
+    {
+      "tagIndex": 16,
+      "globalName": "velocity"
+    },
+    {
+      "tagIndex": 18,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 24,
+      "globalName": "gateTolerance"
+    },
+    {
+      "tagIndex": 25,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 26,
+      "globalName": "gateTolerance"
+    },
+    {
+      "tagIndex": 27,
+      "globalName": "tolerance"
+    },
+    {
+      "tagIndex": 29,
+      "globalName": "gateTolerance"
+    },
+    {
+      "tagIndex": 30,
+      "globalName": "gateVelocity"
+    },
+    {
+      "tagIndex": 31,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 32,
+      "globalName": "gatePause"
+    },
+    {
+      "tagIndex": 33,
+      "globalName": "velocity"
+    },
+    {
+      "tagIndex": 34,
+      "globalName": "tolerance"
+    }
+  ]
+}

@@ -25,7 +25,7 @@ import java.util.Arrays;
 //      - velocity: Changes the velocity of the robot to the tags value (this is in in/s).
 //      - pause: Pauses the robot for a number of seconds equal to the tags value.
 // Feel free to take this OpMode and add your own robot specific tags if you are using the path planner.
-@Disabled
+//@Disabled
 @Config
 @Autonomous(name = "Path Planning Example", group = "Autonomous")
 public class PathPlanExample extends OpMode {

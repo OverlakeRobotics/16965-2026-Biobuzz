@@ -21,7 +21,7 @@ import org.firstinspires.ftc.teamcode.system.OdometryModule;
 // FORWARD_COUNTS_PER_INCH is located in the BasicHolonomicDrivetrain class and can be set there
 // after running this OpMode and getting the value. Before running this tuner class, make sure you
 // have the correct offsets for your x and y offsets for the pinpoint.
-@Disabled
+//@Disabled
 @Config
 @Autonomous(name = "Forward Counts Tuner", group = "Autonomous")
 public class ForwardCountsTuner extends OpMode {

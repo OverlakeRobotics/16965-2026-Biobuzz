@@ -5,7 +5,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.system.OdometryModule;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
@@ -43,14 +46,30 @@ public class AprilTagOdometry implements OdometryModule {
                 double yPos = detection.robotPose.getPosition().y - startPosition.getY(DistanceUnit.INCH);
                 double hPos = detection.robotPose.getOrientation().getYaw() - startPosition.getHeading(AngleUnit.DEGREES);
                 position = new Pose2D(DistanceUnit.INCH, xPos, yPos, AngleUnit.DEGREES, hPos);
-                double distance = Math.hypot(detection.metadata.fieldPosition.get(0) - detection.robotPose.getPosition().x,
-                                             detection.metadata.fieldPosition.get(1) - detection.robotPose.getPosition().y);
-                if (distance < MAX_ACCURATE_DISTANCE) {
-                    canSeeAprilTag = true;
+                VectorF tagPosition = getTagFieldPosition(detection);
+                if (tagPosition != null) {
+                    double distance = Math.hypot(tagPosition.get(0) - detection.robotPose.getPosition().x,
+                                                 tagPosition.get(1) - detection.robotPose.getPosition().y);
+                    if (distance < MAX_ACCURATE_DISTANCE) {
+                        canSeeAprilTag = true;
+                    }
                 }
                 break;
             }
         }
+    }
+
+    // SDK 12.0 split AprilTagDetection into single-tag and cluster detections, each with its own
+    // metadata type, so look up the tag's field position based on which kind this is.
+    private static VectorF getTagFieldPosition(AprilTagDetection detection) {
+        if (detection instanceof AprilTagSingleDetection) {
+            AprilTagSingleDetection single = (AprilTagSingleDetection) detection;
+            return single.metadata == null ? null : single.metadata.fieldPosition;
+        } else if (detection instanceof AprilTagClusterDetection) {
+            AprilTagClusterDetection cluster = (AprilTagClusterDetection) detection;
+            return cluster.metadata == null ? null : cluster.metadata.fieldPosition;
+        }
+        return null;
     }
 
     public Pose2D getPosition() {

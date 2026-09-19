@@ -37,7 +37,7 @@ public class TurnCountsTuner extends OpMode {
     public double countsPerDegree;
 
     public static int turnCounts = 40000;
-
+    
     private int revolutions = 0;
     private double lastHeading = 0;
 
@@ -58,7 +58,7 @@ public class TurnCountsTuner extends OpMode {
 
         driveTrain.setVelocity(velocity);
     }
-
+    
     public boolean isPos(double x) {
         return x >= 0;
     }
@@ -83,9 +83,9 @@ public class TurnCountsTuner extends OpMode {
             telemetry.addData("Counts Per Degree", countsPerDegree);
             Log.d("Counts Per Degree", "Counts Per Degree: " + countsPerDegree);
         }
-
+        
         lastHeading = heading;
-
+        
         telemetry.update();
     }
 

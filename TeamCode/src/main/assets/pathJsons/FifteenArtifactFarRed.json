@@ -1,0 +1,638 @@
+{
+  "version": 1,
+  "createdAt": "2026-04-14T17:33:18.772Z",
+  "alliance": "red",
+  "start": {
+    "x": -64,
+    "y": -33,
+    "h": -90
+  },
+  "points": [
+    {
+      "x": -64,
+      "y": -33,
+      "h": -90
+    },
+    {
+      "x": -63,
+      "y": -33,
+      "h": -90
+    },
+    {
+      "x": -44,
+      "y": -23,
+      "h": -90
+    },
+    {
+      "x": -17,
+      "y": -23,
+      "h": -105
+    },
+    {
+      "x": -18,
+      "y": -62,
+      "h": -105
+    },
+    {
+      "x": -24,
+      "y": -24,
+      "h": -90
+    },
+    {
+      "x": -54,
+      "y": -19,
+      "h": -90
+    },
+    {
+      "x": -26,
+      "y": -32,
+      "h": -55
+    },
+    {
+      "x": -13,
+      "y": -62,
+      "h": -60
+    },
+    {
+      "x": -23,
+      "y": -30,
+      "h": -90
+    },
+    {
+      "x": -54,
+      "y": -19,
+      "h": -90
+    },
+    {
+      "x": -37,
+      "y": -28,
+      "h": -90
+    },
+    {
+      "x": -36,
+      "y": -61,
+      "h": -90
+    },
+    {
+      "x": -54,
+      "y": -19,
+      "h": -90
+    },
+    {
+      "x": -63,
+      "y": -25,
+      "h": -90
+    },
+    {
+      "x": -64,
+      "y": -65,
+      "h": -90
+    },
+    {
+      "x": -55,
+      "y": -44,
+      "h": -90
+    },
+    {
+      "x": -56,
+      "y": -22,
+      "h": -90
+    },
+    {
+      "x": -29,
+      "y": -15,
+      "h": -90
+    }
+  ],
+  "segments": [
+    {
+      "type": "line",
+      "end": {
+        "x": -64,
+        "y": -33,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -64,
+          "y": -33,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -63,
+        "y": -33,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -63,
+          "y": -33,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -44,
+        "y": -23,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -44,
+          "y": -23,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -17,
+        "y": -23,
+        "h": -105
+      },
+      "samples": [
+        {
+          "x": -17,
+          "y": -23,
+          "h": -105
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -18,
+        "y": -62,
+        "h": -105
+      },
+      "samples": [
+        {
+          "x": -18,
+          "y": -62,
+          "h": -105
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -24,
+        "y": -24,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -24,
+          "y": -24,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": -19,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": -19,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -26,
+        "y": -32,
+        "h": -55
+      },
+      "samples": [
+        {
+          "x": -26,
+          "y": -32,
+          "h": -55
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -13,
+        "y": -62,
+        "h": -60
+      },
+      "samples": [
+        {
+          "x": -13,
+          "y": -62,
+          "h": -60
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -23,
+        "y": -30,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -23,
+          "y": -30,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": -19,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": -19,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -37,
+        "y": -28,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -37,
+          "y": -28,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -36,
+        "y": -61,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -36,
+          "y": -61,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -54,
+        "y": -19,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -54,
+          "y": -19,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -63,
+        "y": -25,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -63,
+          "y": -25,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -64,
+        "y": -65,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -64,
+          "y": -65,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -55,
+        "y": -44,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -55,
+          "y": -44,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -56,
+        "y": -22,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -56,
+          "y": -22,
+          "h": -90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": -29,
+        "y": -15,
+        "h": -90
+      },
+      "samples": [
+        {
+          "x": -29,
+          "y": -15,
+          "h": -90
+        }
+      ]
+    }
+  ],
+  "headingMode": "straight",
+  "endHeading": 90,
+  "velocity": 150,
+  "maxAccel": 40,
+  "tolerance": 6,
+  "snapInches": 1,
+  "robot": {
+    "length": 18,
+    "width": 18
+  },
+  "tags": [
+    {
+      "index": 1,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 2,
+      "name": "launchArtifacts",
+      "value": 2.95
+    },
+    {
+      "index": 4,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 6,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 7,
+      "name": "launchArtifacts",
+      "value": 1.85
+    },
+    {
+      "index": 9,
+      "name": "pause",
+      "value": 1.2
+    },
+    {
+      "index": 10,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 11,
+      "name": "launchArtifacts",
+      "value": 1.85
+    },
+    {
+      "index": 12,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 13,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 14,
+      "name": "launchArtifacts",
+      "value": 1.85
+    },
+    {
+      "index": 15,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 16,
+      "name": "pause",
+      "value": 0.7
+    },
+    {
+      "index": 17,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 18,
+      "name": "launchArtifacts",
+      "value": 1.85
+    },
+    {
+      "index": 6,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 14,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 4,
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "index": 17,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 8,
+      "name": "velocity",
+      "value": 120
+    },
+    {
+      "index": 9,
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "index": 0,
+      "name": "shootWhileMove",
+      "value": 0
+    },
+    {
+      "index": 15,
+      "name": "tolerance",
+      "value": 10
+    },
+    {
+      "index": 9,
+      "name": "intake",
+      "value": 2800
+    },
+    {
+      "index": 10,
+      "name": "intake",
+      "value": 0
+    },
+    {
+      "index": 10,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 8,
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "index": 17,
+      "name": "tolerance",
+      "value": 3
+    }
+  ],
+  "globals": [
+    {
+      "name": "launchTime",
+      "value": 1.85
+    },
+    {
+      "name": "intakeSpeed",
+      "value": 2800
+    },
+    {
+      "name": "velocity",
+      "value": 150
+    },
+    {
+      "name": "gatePause",
+      "value": 1.2
+    },
+    {
+      "name": "tolerance",
+      "value": 6
+    },
+    {
+      "name": "gateTolerance",
+      "value": 3
+    },
+    {
+      "name": "gateVelocity",
+      "value": 120
+    },
+    {
+      "name": "wallTolerance",
+      "value": 10
+    }
+  ],
+  "tagBindings": [
+    {
+      "tagIndex": 2,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 4,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 5,
+      "globalName": "gatePause"
+    },
+    {
+      "tagIndex": 7,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 8,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 10,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 11,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 14,
+      "globalName": "launchTime"
+    },
+    {
+      "tagIndex": 17,
+      "globalName": "velocity"
+    },
+    {
+      "tagIndex": 19,
+      "globalName": "gateVelocity"
+    },
+    {
+      "tagIndex": 20,
+      "globalName": "velocity"
+    },
+    {
+      "tagIndex": 22,
+      "globalName": "wallTolerance"
+    },
+    {
+      "tagIndex": 23,
+      "globalName": "intakeSpeed"
+    },
+    {
+      "tagIndex": 26,
+      "globalName": "tolerance"
+    }
+  ]
+}
