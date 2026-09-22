@@ -22,7 +22,9 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 @TeleOp(name = "TeleOp Field Centric", group = "TeleOp")
 public class TeleOpFieldCentric extends OpMode {
     public static double velocity = 2800;
+    public static double intakePower = 1.0;
     private OdometryHolonomicDrivetrain driveTrain;
+    private DcMotorEx intake;
 
     public static final double yOffset = -156.0; // -168.0 // mm
     public static final double xOffset = 72.0; // -84.0 // mm
@@ -39,6 +41,7 @@ public class TeleOpFieldCentric extends OpMode {
                 hardwareMap.get(DcMotorEx.class, "frontRight"),
                 new GoBildaPinpointOdometry(pinpointDriver)
         );
+        intake = hardwareMap.get(DcMotorEx.class, "intake");
     }
 
     @Override
@@ -58,5 +61,14 @@ public class TeleOpFieldCentric extends OpMode {
         );
         // Power the motors
         driveTrain.drive();
+        if (gamepad1.b) {
+            intake.setPower(intakePower);
+        }
+        else if (gamepad1.x) {
+            intake.setPower(-intakePower);
+        }
+        else {
+            intake.setPower(0);
+        }
     }
 }
