@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.examples;
 
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import android.util.Log;
+
 
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.follower.Follower;
@@ -41,6 +45,8 @@ public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler
     private Follower follower;
     private Command routeCommand;
     private List<PedroPathBuilder.Chunk> chunks;
+    private final ElapsedTime runtime = new ElapsedTime();
+    private double finishedAt = -1;
 
     @Override
     public void init() {
@@ -68,6 +74,8 @@ public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler
         chunks = PedroPathBuilder.build(route);                       // split at "pause" tags
         routeCommand = PathPlanRunner.build(follower, chunks, this);  // one command for the whole route
         Scheduler.schedule(routeCommand);
+        finishedAt = -1;
+        runtime.reset();
     }
 
     @Override
@@ -76,9 +84,19 @@ public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler
         Scheduler.execute();    // advances the route command and any tag commands
 
         PathServer.setRobotPose(toPose2D(follower.pose()));
+        boolean routeDone = routeCommand != null && !routeCommand.isScheduled();
+        if (routeDone && finishedAt < 0) {
+            finishedAt = runtime.seconds();
+            Log.d("PathPlanExample", "Finished route in " + finishedAt + " s");
+        }
+        Pose p = follower.pose();
+        telemetry.addData("Follower", "Pedro Foresight");
+        telemetry.addData("Elapsed", "%.2f s", runtime.seconds());
         telemetry.addData("Following", follower.following());
         telemetry.addData("Sub-path", follower.pathIndex());
-        telemetry.addData("Route done", routeCommand != null && !routeCommand.isScheduled());
+        telemetry.addData("Pose", "x %.1f  y %.1f  h %.1f", p.x(), p.y(), Math.toDegrees(p.heading()));
+        telemetry.addData("Route done", routeDone);
+        if (finishedAt >= 0) telemetry.addData("Finished in", "%.2f s", finishedAt);
         telemetry.update();
     }
 
