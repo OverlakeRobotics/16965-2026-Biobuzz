@@ -26,6 +26,9 @@ public class TeleOpFieldCentric extends OpMode {
     private OdometryHolonomicDrivetrain driveTrain;
     private DcMotorEx intake;
 
+    private DcMotorEx intake;
+    private boolean intakeOn = false;
+
     public static final double yOffset = -156.0; // -168.0 // mm
     public static final double xOffset = 72.0; // -84.0 // mm
 
@@ -59,6 +62,20 @@ public class TeleOpFieldCentric extends OpMode {
                 -gamepad1.right_stick_x * velocity,
                 -90
         );
+
+        //intake
+        // B toggles the intake on/off (-1). Holding A reverses it (1) until released.
+        if (gamepad1.bWasPressed()){
+            intakeOn = !intakeOn;
+        }
+        if (gamepad1.a) {
+            intake.setPower(1);
+        } else if (intakeOn) {
+            intake.setPower(-1);
+        } else {
+            intake.setPower(0);
+        }
+
         // Power the motors
         driveTrain.drive();
         if (gamepad1.b) {
