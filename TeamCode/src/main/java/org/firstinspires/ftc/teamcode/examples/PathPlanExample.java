@@ -14,6 +14,8 @@ import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -33,6 +35,9 @@ import java.util.List;
 //      - velocity: Caps the robot's speed. The value is a percent of max speed (100 = full speed);
 //                  a value of 1 or less is taken as a fraction.
 //      - pause: Stops the robot for a number of seconds equal to the tag's value.
+// This OpMode also handles:
+//      - intake: Runs the intake motor at the tag's value in ticks/s (0 stops it, negative
+//                reverses it). Skipped if the robot has no motor named "intake".
 // Add your own tags in commandFor() below.
 //
 // Robot setup: this example uses the Follower from pedro/Constants.java (Pinpoint localizer +
@@ -43,6 +48,7 @@ import java.util.List;
 @Autonomous(name = "Path Planning Example", group = "Autonomous")
 public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler {
     private Follower follower;
+    private DcMotorEx intake;   // null when the robot has no "intake" motor
     private Command routeCommand;
     private List<PedroPathBuilder.Chunk> chunks;
     private final ElapsedTime runtime = new ElapsedTime();
@@ -52,6 +58,8 @@ public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler
     public void init() {
         Scheduler.reset();   // the scheduler is static, so clear anything left from a previous OpMode
         follower = Constants.create(hardwareMap);
+        intake = hardwareMap.tryGet(DcMotorEx.class, "intake");
+        if (intake != null) intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         PathPlanRunner.publishRobotLimits(follower);   // lets the planner preview timing with real limits
         PathServer.startServer();
     }
@@ -104,6 +112,7 @@ public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler
     public void stop() {
         Scheduler.reset();
         follower.stop();
+        if (intake != null) intake.setVelocity(0);
         PathServer.stopServer();
     }
 
@@ -114,6 +123,9 @@ public class PathPlanExample extends OpMode implements PathPlanRunner.TagHandler
         switch (name) {
             case "log":
                 return Commands.instant(() -> telemetry.log().add("Reached log tag " + value));
+            case "intake":
+                if (intake == null) return null;
+                return Commands.instant(() -> intake.setVelocity(value));
             // Add more cases here for your own custom tags! Long running behaviors can be built
             // with Command.build().setStart(...).setExecute(...).setDone(...).
             default:
