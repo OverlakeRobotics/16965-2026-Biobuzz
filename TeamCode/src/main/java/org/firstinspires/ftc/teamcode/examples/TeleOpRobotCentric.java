@@ -29,27 +29,29 @@ public class TeleOpRobotCentric extends OpMode {
     private OdometryHolonomicDrivetrain driveTrain;
 
     private DcMotorEx intake;
+    // D-pad up/down changes the selected flywheel target velocity by flywheelStep ticks/s per press
+    public static double flywheelStep = 50;
+    public static double maxFlywheelVelocity = 2800;
     private DcMotorEx flywheelP;
     private boolean debug = true;
-    private double flywheelPPower = 0.0;
+    private double flywheelPVelocity = 0.0;
     private boolean intakeOn = false;
 
     private Servo hoodP;
     private double hoodPPosition = 0.0;
 
+    // Both blockers share one position: Y moves them to blockerUpPos, X moves them back to 0
+    public static double blockerUpPos = 0.16;
     private Servo blockerP;
     private double blockerPos = 0.0;
-    private boolean blockerPActive;
 
     private DcMotorEx flywheelN;
-    private double flywheelNPower = 0.0;
+    private double flywheelNVelocity = 0.0;
 
     private Servo hoodN;
     private double hoodNPosition = 0.0;
 
     private Servo blockerN;
-    private double blockerNPos = 0.0;
-    private boolean blockerNActive;
 
     public static final double yOffset = -156.0; // -168.0 // mm
     public static final double xOffset = 72.0; // -84.0 // mm
@@ -68,19 +70,19 @@ public class TeleOpRobotCentric extends OpMode {
         );
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         flywheelP = hardwareMap.get(DcMotorEx.class, "flywheelP");
-        flywheelP.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        flywheelP.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         hoodP = hardwareMap.get(Servo.class, "hoodP");
         hoodP.setPosition(hoodPPosition);
         blockerP = hardwareMap.get(Servo.class, "blockerP");
         blockerP.setPosition(blockerPos);
         flywheelN = hardwareMap.get(DcMotorEx.class, "flywheelN");
-        flywheelN.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        flywheelN.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         flywheelN.setDirection(DcMotorSimple.Direction.REVERSE);
         hoodN = hardwareMap.get(Servo.class, "hoodN");
         hoodN.setDirection(Servo.Direction.REVERSE);
         hoodN.setPosition(hoodNPosition);
         blockerN = hardwareMap.get(Servo.class, "blockerN");
-        blockerN.setPosition(blockerNPos);
+        blockerN.setPosition(blockerPos);
 
     }
 
@@ -113,71 +115,77 @@ public class TeleOpRobotCentric extends OpMode {
             intake.setPower(0);
         }
 
-        //shooter (power test)
+        //shooter (velocity test)
         if (debug) {
             // WasPressed() only returns true once per press, so read it once and share it between both flywheels
             boolean flywheelUp = gamepad1.dpadUpWasPressed();
             boolean flywheelDown = gamepad1.dpadDownWasPressed();
+            // Holding LB moves the nectar flywheel/hood; otherwise the d-pad moves the pollen ones
+            boolean nectarSelected = gamepad1.left_bumper;
 
-            if (flywheelUp) {
-                flywheelPPower += 0.05;
-                flywheelPPower = (Math.min(1.0, flywheelPPower));
-            } else if (flywheelDown) {
-                flywheelPPower -= 0.05;
-                flywheelPPower = (Math.max(0.0, flywheelPPower));
-            }
-            flywheelP.setPower(flywheelPPower);
+            if (!nectarSelected) {
+                if (flywheelUp) {
+                    flywheelPVelocity += flywheelStep;
+                    flywheelPVelocity = (Math.min(maxFlywheelVelocity, flywheelPVelocity));
+                } else if (flywheelDown) {
+                    flywheelPVelocity -= flywheelStep;
+                    flywheelPVelocity = (Math.max(0.0, flywheelPVelocity));
+                }
 
-            if (gamepad1.dpad_right) {
-                hoodPPosition += 0.01;
-                hoodPPosition = (Math.min(1.0, hoodPPosition));
-            } else if (gamepad1.dpad_left) {
-                hoodPPosition -= 0.01;
-                hoodPPosition = (Math.max(0.0, hoodPPosition));
+                if (gamepad1.dpad_right) {
+                    hoodPPosition += 0.01;
+                    hoodPPosition = (Math.min(1.0, hoodPPosition));
+                } else if (gamepad1.dpad_left) {
+                    hoodPPosition -= 0.01;
+                    hoodPPosition = (Math.max(0.0, hoodPPosition));
+                }
             }
+            flywheelP.setVelocity(flywheelPVelocity);
 
             if (gamepad1.y) {
-                blockerPos += 0.01;
-                blockerPos = (Math.min(1.0, blockerPos));
+                blockerPos = blockerUpPos;
             } else if (gamepad1.x) {
-                blockerPos -= 0.01;
-                blockerPos = (Math.max(0.0, blockerPos));
+                blockerPos = 0.0;
             }
 
             hoodP.setPosition(hoodPPosition);
             blockerP.setPosition(blockerPos);
             blockerN.setPosition(blockerPos);
 
-            telemetry.addData("Flywheel power", "%.2f", flywheelPPower);
+            telemetry.addData("Flywheel target velocity (ticks/s)", "%.0f", flywheelPVelocity);
             telemetry.addData("Flywheel velocity (ticks/s)", "%.0f", flywheelP.getVelocity());
             telemetry.addData("Hood position", "%.3f", hoodPPosition);
             telemetry.addData("Intake on", intakeOn);
+            telemetry.addData("Intake velocity (ticks/s)", "%.0f", intake.getVelocity());
+            telemetry.addData("D-pad controls", nectarSelected ? "NECTAR" : "POLLEN");
             telemetry.addData("pollen blocker position: ", blockerPos);
 
-            //nectar shooter (power test)
-            if (flywheelUp) {
-                flywheelNPower += 0.05;
-                flywheelNPower = (Math.min(1.0, flywheelNPower));
-            } else if (flywheelDown) {
-                flywheelNPower -= 0.05;
-                flywheelNPower = (Math.max(0.0, flywheelNPower));
-            }
-            flywheelN.setPower(flywheelNPower);
+            //nectar shooter (velocity test)
+            if (nectarSelected) {
+                if (flywheelUp) {
+                    flywheelNVelocity += flywheelStep;
+                    flywheelNVelocity = (Math.min(maxFlywheelVelocity, flywheelNVelocity));
+                } else if (flywheelDown) {
+                    flywheelNVelocity -= flywheelStep;
+                    flywheelNVelocity = (Math.max(0.0, flywheelNVelocity));
+                }
 
-            if (gamepad1.dpad_right) {
-                hoodNPosition += 0.01;
-                hoodNPosition = (Math.min(1.0, hoodNPosition));
-            } else if (gamepad1.dpad_left) {
-                hoodNPosition -= 0.01;
-                hoodNPosition = (Math.max(0.0, hoodNPosition));
+                if (gamepad1.dpad_right) {
+                    hoodNPosition += 0.01;
+                    hoodNPosition = (Math.min(1.0, hoodNPosition));
+                } else if (gamepad1.dpad_left) {
+                    hoodNPosition -= 0.01;
+                    hoodNPosition = (Math.max(0.0, hoodNPosition));
+                }
             }
+            flywheelN.setVelocity(flywheelNVelocity);
 
             hoodN.setPosition(hoodNPosition);
 
-            telemetry.addData("Nectar flywheel power", "%.2f", flywheelNPower);
+            telemetry.addData("Nectar flywheel target velocity (ticks/s)", "%.0f", flywheelNVelocity);
             telemetry.addData("Nectar flywheel velocity (ticks/s)", "%.0f", flywheelN.getVelocity());
             telemetry.addData("Nectar hood position", "%.3f", hoodNPosition);
-            telemetry.addData("nectar blocker position: ", blockerNPos);
+            telemetry.addData("nectar blocker position: ", blockerPos);
             telemetry.update();
         }
 
