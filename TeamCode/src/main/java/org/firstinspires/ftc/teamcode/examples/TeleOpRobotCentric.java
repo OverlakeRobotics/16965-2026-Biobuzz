@@ -2,12 +2,14 @@ package org.firstinspires.ftc.teamcode.examples;
 
 
 import com.acmerobotics.dashboard.config.Config;
+import com.arcrobotics.ftclib.hardware.ServoEx;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -32,8 +34,22 @@ public class TeleOpRobotCentric extends OpMode {
     private double flywheelPPower = 0.0;
     private boolean intakeOn = false;
 
-    private Servo hood;
-    private double hoodPosition = 0.0;
+    private Servo hoodP;
+    private double hoodPPosition = 0.0;
+
+    private Servo blockerP;
+    private double blockerPos = 0.0;
+    private boolean blockerPActive;
+
+    private DcMotorEx flywheelN;
+    private double flywheelNPower = 0.0;
+
+    private Servo hoodN;
+    private double hoodNPosition = 0.0;
+
+    private Servo blockerN;
+    private double blockerNPos = 0.0;
+    private boolean blockerNActive;
 
     public static final double yOffset = -156.0; // -168.0 // mm
     public static final double xOffset = 72.0; // -84.0 // mm
@@ -53,13 +69,25 @@ public class TeleOpRobotCentric extends OpMode {
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         flywheelP = hardwareMap.get(DcMotorEx.class, "flywheelP");
         flywheelP.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        hood = hardwareMap.get(Servo.class, "hood");
+        hoodP = hardwareMap.get(Servo.class, "hoodP");
+        hoodP.setPosition(hoodPPosition);
+        blockerP = hardwareMap.get(Servo.class, "blockerP");
+        blockerP.setPosition(blockerPos);
+        flywheelN = hardwareMap.get(DcMotorEx.class, "flywheelN");
+        flywheelN.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        flywheelN.setDirection(DcMotorSimple.Direction.REVERSE);
+        hoodN = hardwareMap.get(Servo.class, "hoodN");
+        hoodN.setDirection(Servo.Direction.REVERSE);
+        hoodN.setPosition(hoodNPosition);
+        blockerN = hardwareMap.get(Servo.class, "blockerN");
+        blockerN.setPosition(blockerNPos);
+
     }
 
     @Override
     public void start() {
         driveTrain.setPosition(new Pose2D(DistanceUnit.INCH, -64, -33, AngleUnit.DEGREES, -90));
-        hood.setPosition(hoodPosition);
+
     }
 
     @Override
@@ -87,28 +115,70 @@ public class TeleOpRobotCentric extends OpMode {
 
         //shooter (power test)
         if (debug) {
-            if (gamepad1.dpadUpWasPressed()) {
+            // WasPressed() only returns true once per press, so read it once and share it between both flywheels
+            boolean flywheelUp = gamepad1.dpadUpWasPressed();
+            boolean flywheelDown = gamepad1.dpadDownWasPressed();
+
+            if (flywheelUp) {
                 flywheelPPower += 0.05;
                 flywheelPPower = (Math.min(1.0, flywheelPPower));
-            } else if (gamepad1.dpadDownWasPressed()) {
+            } else if (flywheelDown) {
                 flywheelPPower -= 0.05;
                 flywheelPPower = (Math.max(0.0, flywheelPPower));
             }
             flywheelP.setPower(flywheelPPower);
 
-            if (gamepad1.dpadRightWasPressed()) {
-                hoodPosition += 0.001;
-                hoodPosition = (Math.min(1.0, hoodPosition));
-            } else if (gamepad1.dpadLeftWasPressed()) {
-                hoodPosition -= 0.001;
-                hoodPosition = (Math.max(0.0, hoodPosition));
+            if (gamepad1.dpad_right) {
+                hoodPPosition += 0.01;
+                hoodPPosition = (Math.min(1.0, hoodPPosition));
+            } else if (gamepad1.dpad_left) {
+                hoodPPosition -= 0.01;
+                hoodPPosition = (Math.max(0.0, hoodPPosition));
             }
-            hood.setPosition(hoodPosition);
+
+            if (gamepad1.y) {
+                blockerPos += 0.01;
+                blockerPos = (Math.min(1.0, blockerPos));
+            } else if (gamepad1.x) {
+                blockerPos -= 0.01;
+                blockerPos = (Math.max(0.0, blockerPos));
+            }
+
+            hoodP.setPosition(hoodPPosition);
+            blockerP.setPosition(blockerPos);
+            blockerN.setPosition(blockerPos);
 
             telemetry.addData("Flywheel power", "%.2f", flywheelPPower);
             telemetry.addData("Flywheel velocity (ticks/s)", "%.0f", flywheelP.getVelocity());
-            telemetry.addData("Hood position", "%.3f", hoodPosition);
+            telemetry.addData("Hood position", "%.3f", hoodPPosition);
             telemetry.addData("Intake on", intakeOn);
+            telemetry.addData("pollen blocker position: ", blockerPos);
+
+            //nectar shooter (power test)
+            if (flywheelUp) {
+                flywheelNPower += 0.05;
+                flywheelNPower = (Math.min(1.0, flywheelNPower));
+            } else if (flywheelDown) {
+                flywheelNPower -= 0.05;
+                flywheelNPower = (Math.max(0.0, flywheelNPower));
+            }
+            flywheelN.setPower(flywheelNPower);
+
+            if (gamepad1.dpad_right) {
+                hoodNPosition += 0.01;
+                hoodNPosition = (Math.min(1.0, hoodNPosition));
+            } else if (gamepad1.dpad_left) {
+                hoodNPosition -= 0.01;
+                hoodNPosition = (Math.max(0.0, hoodNPosition));
+            }
+
+            hoodN.setPosition(hoodNPosition);
+
+            telemetry.addData("Nectar flywheel power", "%.2f", flywheelNPower);
+            telemetry.addData("Nectar flywheel velocity (ticks/s)", "%.0f", flywheelN.getVelocity());
+            telemetry.addData("Nectar hood position", "%.3f", hoodNPosition);
+            telemetry.addData("nectar blocker position: ", blockerNPos);
+            telemetry.update();
         }
 
 
