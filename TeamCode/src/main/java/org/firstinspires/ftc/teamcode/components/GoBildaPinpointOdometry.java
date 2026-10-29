@@ -6,6 +6,7 @@ package org.firstinspires.ftc.teamcode.components;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.system.OdometryModule;
 
 public class GoBildaPinpointOdometry implements OdometryModule {
@@ -16,13 +17,10 @@ public class GoBildaPinpointOdometry implements OdometryModule {
     private boolean doPositionReset;
     private boolean doHeadingReset;
 
-    public static final double yOffset = -156.0;
-    public static final double xOffset = 72.0;
-
-
     public GoBildaPinpointOdometry(GoBildaPinpointDriver pinpoint) {
         this.pinpoint = pinpoint;
-        this.pinpoint.setOffsets(xOffset, yOffset, DistanceUnit.MM);
+        // Same tuned offsets Pedro uses, so auto and teleop agree on where the robot is
+        this.pinpoint.setOffsets(Constants.X_POD_OFFSET_INCHES, Constants.Y_POD_OFFSET_INCHES, DistanceUnit.INCH);
 
         positionPriority = 0;
         headingPriority = 0;

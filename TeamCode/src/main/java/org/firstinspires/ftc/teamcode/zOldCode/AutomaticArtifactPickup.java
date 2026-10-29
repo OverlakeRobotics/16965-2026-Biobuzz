@@ -1,4 +1,6 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import android.util.Log;
 
@@ -18,13 +20,14 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.code.helpers.AutoAligner;
-import org.firstinspires.ftc.teamcode.code.parts.Intake;
-import org.firstinspires.ftc.teamcode.code.parts.Turret;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.AutoAligner;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Intake;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Turret;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 
 @Config
+@Disabled
 @TeleOp(name = "Automatic Artifact Pickup", group = "TeleOp")
 public class AutomaticArtifactPickup extends OpMode {
     public HuskyLens huskyLens;

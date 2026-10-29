@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
 // An example of a simple robot-centric TeleOp.
 //@Disabled
 @Config
+@Disabled
 @TeleOp(name = "TeleOp Example", group = "TeleOp")
 public class TeleOpExample extends OpMode {
     public static double velocity = 2800;

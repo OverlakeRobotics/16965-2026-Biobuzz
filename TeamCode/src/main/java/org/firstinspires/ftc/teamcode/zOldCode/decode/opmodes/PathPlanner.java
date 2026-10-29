@@ -1,12 +1,15 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.code.helpers.BaseAuto;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.BaseAuto;
 import org.firstinspires.ftc.teamcode.system.PathServer;
 
 @Config
+@Disabled
 @Autonomous(name = "Path Planner", group = "Autonomous")
 public class PathPlanner extends BaseAuto {
     public static double sDelay = 0;

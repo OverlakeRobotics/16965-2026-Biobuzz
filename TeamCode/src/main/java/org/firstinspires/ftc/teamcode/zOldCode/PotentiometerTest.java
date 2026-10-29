@@ -1,4 +1,6 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import android.util.Log;
 
@@ -11,10 +13,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.code.parts.Potentiometer;
-import org.firstinspires.ftc.teamcode.code.parts.Turret;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Potentiometer;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Turret;
 
 @Config
+@Disabled
 @TeleOp(name = "Potentiometer Test", group = "TeleOp")
 public class PotentiometerTest extends OpMode {
     public final double TICKS_PER_DEGREE = 537.7 / 360;

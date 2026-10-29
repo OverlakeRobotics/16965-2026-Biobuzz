@@ -27,13 +27,9 @@ public class TeleOpFieldCentric extends OpMode {
     private DcMotorEx intake;
     private boolean intakeOn = false;
 
-    public static final double yOffset = -156.0; // -168.0 // mm
-    public static final double xOffset = 72.0; // -84.0 // mm
-
     @Override
     public void init() {
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
         pinpointDriver.recalibrateIMU();
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),

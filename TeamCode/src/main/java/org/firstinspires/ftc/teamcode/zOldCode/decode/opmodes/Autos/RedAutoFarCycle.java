@@ -1,17 +1,20 @@
-package org.firstinspires.ftc.teamcode.code.opmodes.Autos;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes.Autos;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.code.helpers.BaseAuto;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.BaseAuto;
 
 @Config
+@Disabled
 @Autonomous(name = "Red Auto Far Cycle", group = "Autonomous")
 public class RedAutoFarCycle extends BaseAuto {
     @Override
     public void init() {
         super.readJson = true;
-        super.jsonFilename = "pathJsons/CycleFarRed.json";
+        super.jsonFilename = "pathJsons/decode/CycleFarRed.json";
         super.shooterDelay = 0.4;
         super.init();
     }

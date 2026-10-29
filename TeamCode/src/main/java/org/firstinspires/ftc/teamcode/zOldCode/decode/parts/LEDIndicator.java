@@ -1,13 +1,13 @@
-package org.firstinspires.ftc.teamcode.code.parts;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.parts;
 
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
 
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.Color;
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.GoBildaPrismDriver;
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.PrismAnimations;
-import org.firstinspires.ftc.teamcode.code.parts.Intake.IntakeState;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.Color;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.PrismAnimations;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Intake.IntakeState;
 
 @Config
 public class LEDIndicator {

@@ -37,16 +37,18 @@ public class Constants {
     );
 
     // Output of the Pinpoint tuner, run 2026-10-13. Offsets are 91.2 mm / -143.8 mm.
-    // TODO(offsets): code/helpers/BaseTeleOp.java, components/GoBildaPinpointOdometry.java and
-    //   examples/TeleOpFieldCentric.java / TeleOpRobotCentric.java still use xOffset = 72 mm /
-    //   yOffset = -156 mm. Make them agree with these before relying on auto->teleop pose handoff.
+    // These are the only copy of the pod offsets: components/GoBildaPinpointOdometry also reads them,
+    // so Pedro (auto) and the odometry drivetrain (teleop) always agree.
+    public static final double X_POD_OFFSET_INCHES = 3.5896529550627463;
+    public static final double Y_POD_OFFSET_INCHES = -5.661084032434179;
+
     public static PinpointConfig localizerConfig = new PinpointConfig(
             c -> {
                 c.name.set("pinpoint");
                 c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
                 c.offsetUnits.set(DistanceUnit.INCH);
-                c.xPodOffset.set(3.5896529550627463);
-                c.yPodOffset.set(-5.661084032434179);
+                c.xPodOffset.set(X_POD_OFFSET_INCHES);
+                c.yPodOffset.set(Y_POD_OFFSET_INCHES);
                 c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
                 c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
                 c.globalDistanceUnit.set(DistanceUnit.INCH);

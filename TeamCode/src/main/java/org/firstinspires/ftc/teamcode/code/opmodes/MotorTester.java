@@ -15,7 +15,6 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.code.parts.Intake;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;

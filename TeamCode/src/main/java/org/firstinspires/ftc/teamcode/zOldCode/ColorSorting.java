@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
 
 import android.util.Log;
 
@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.Servo;
-import org.firstinspires.ftc.teamcode.code.parts.Intake;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Intake;
 
 @Config
 @TeleOp(name = "Color Sorting", group = "TeleOp")

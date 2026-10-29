@@ -1,14 +1,17 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.Color;
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.GoBildaPrismDriver;
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.PrismAnimations;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.Color;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.PrismAnimations;
 
 @Config
+@Disabled
 @Autonomous(name = "Prepare LED Indicator Artboards", group = "Autonomous")
 public class PrepareLEDIndicatorArtboards extends LinearOpMode {
     public static int ANIMATION_BRIGHTNESS = 100;

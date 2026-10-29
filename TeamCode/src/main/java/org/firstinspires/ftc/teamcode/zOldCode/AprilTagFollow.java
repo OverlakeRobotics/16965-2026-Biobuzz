@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
 
 import android.util.Log;
 
@@ -16,8 +16,8 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.code.parts.Intake;
-import org.firstinspires.ftc.teamcode.code.parts.Turret;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Intake;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Turret;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 import java.util.List;
 
 @Config
+@Disabled
 @TeleOp(name = "April Tag Follow", group = "Autonomous")
 public class AprilTagFollow extends OpMode {
     public static Turret turret;

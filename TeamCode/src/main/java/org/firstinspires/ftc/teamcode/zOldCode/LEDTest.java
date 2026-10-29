@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -9,10 +9,10 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.GoBildaPrismDriver;
-import org.firstinspires.ftc.teamcode.code.helpers.Prism.PrismAnimations;
-import org.firstinspires.ftc.teamcode.code.parts.Intake;
-import org.firstinspires.ftc.teamcode.code.parts.LEDIndicator;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.PrismAnimations;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Intake;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.LEDIndicator;
 
 @Disabled
 @Config

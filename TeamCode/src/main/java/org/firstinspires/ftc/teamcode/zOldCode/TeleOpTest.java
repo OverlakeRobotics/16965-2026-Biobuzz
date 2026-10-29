@@ -1,4 +1,6 @@
-package org.firstinspires.ftc.teamcode.code.opmodes;
+package org.firstinspires.ftc.teamcode.zOldCode.decode.opmodes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -11,6 +13,7 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 
 @Config
+@Disabled
 @TeleOp(name = "TeleOp Test", group = "TeleOp")
 public class TeleOpTest extends OpMode {
     public double yOffset = -168.0; // mm
