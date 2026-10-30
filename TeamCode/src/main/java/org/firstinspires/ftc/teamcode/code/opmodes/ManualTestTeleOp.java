@@ -5,6 +5,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -23,6 +24,7 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //   D-pad up/down      flywheel target velocity +/- flywheelStep
 //   D-pad right/left   hood position +/- hoodStep (hold)
 //   Y / X              open / close both blockers
+//   RB                 toggle flower servo (picks up from the flower) between flowerDown and flowerUp
 //
 // FTC Dashboard (http://192.168.43.1:8080/dash): graph "Pollen velocity" vs "Pollen target" (same for
 // Nectar) and tune RobotHardware.pollenPIDF / nectarPIDF live.
@@ -32,11 +34,15 @@ public class ManualTestTeleOp extends OpMode {
     public static double driveVelocity = 2800;
     public static double flywheelStep = 50;
     public static double hoodStep = 0.01;
+    public static double flowerDown = 0;
+    public static double flowerUp = 0.4;
 
     private RobotHardware robot;
     private OdometryHolonomicDrivetrain driveTrain;
     private boolean intakeOn = false;
     private boolean blockersOpen = false;
+    private Servo flower;
+    private boolean flowerRaised = false;
 
     @Override
     public void init() {
@@ -44,6 +50,7 @@ public class ManualTestTeleOp extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new RobotHardware(hardwareMap);
         driveTrain = robot.createDrivetrain();
+        flower = hardwareMap.get(Servo.class, "flower");
     }
 
     @Override
@@ -90,6 +97,11 @@ public class ManualTestTeleOp extends OpMode {
             robot.closeBlockers();
         }
 
+        if (gamepad1.rightBumperWasPressed()) {
+            flowerRaised = !flowerRaised;
+        }
+        flower.setPosition(flowerRaised ? flowerUp : flowerDown);
+
         driveTrain.drive();
 
         Pose2D pose = driveTrain.getPosition();
@@ -99,6 +111,7 @@ public class ManualTestTeleOp extends OpMode {
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");
         telemetry.addData("Blockers", blockersOpen ? "OPEN" : "CLOSED");
+        telemetry.addData("Flower", flowerRaised ? "UP" : "DOWN");
         telemetry.addData("Intake on", intakeOn);
         telemetry.addData("Intake velocity (ticks/s)", "%.0f", robot.intake.getIntakeVelocity());
         telemetry.addData("Transfer velocity (ticks/s)", "%.0f", robot.intake.getTransferVelocity());

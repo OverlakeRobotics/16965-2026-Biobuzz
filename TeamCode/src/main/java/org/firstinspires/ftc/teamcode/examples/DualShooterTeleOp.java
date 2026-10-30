@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.code.helpers.AutoAligner;
-import org.firstinspires.ftc.teamcode.code.parts.Shooter;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.AutoAligner;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Shooter;
 
 
 // Two parallel shooters and no turret, both firing out the same side of the robot. While aiming,

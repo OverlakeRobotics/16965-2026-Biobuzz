@@ -7,8 +7,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.code.helpers.AutoAligner;
-import org.firstinspires.ftc.teamcode.code.parts.Turret;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.AutoAligner;
+import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Turret;
 
 
 // Two shooters, each on its own rotating turret. Both turrets always track the nearest goal, so
