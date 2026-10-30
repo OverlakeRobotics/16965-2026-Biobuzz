@@ -17,9 +17,9 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //
 // Controls (gamepad 1):
 //   Sticks         drive
-//   LB / RB        drive to the LEFT / RIGHT preset (as the driver sees it, around the HIVE legs) and
-//                  face that CELL; any stick cancels. Afterwards the heading stays locked on the CELL
-//                  until you turn.
+//   Y              drive to the preset of the CELL that's facing up (from HiveTipDetector, around the
+//                  HIVE legs) and face that CELL; any stick cancels. Afterwards the heading stays locked
+//                  on the CELL until you turn.
 //   Hold RT        shoot: blockers open while aimed at the CELL; the intake feeds except while a flywheel is low
 //   B              toggle intake + transfer
 //   Hold A         reverse intake + transfer
@@ -42,6 +42,7 @@ public abstract class BaseTeleOp extends OpMode {
     protected RobotHardware robot;
     protected OdometryHolonomicDrivetrain driveTrain;
     protected AutoAimer autoAimer;
+    protected HiveTipDetector hiveTip;
 
     protected boolean routing = false;       // following a preset route
     protected boolean aimLock = false;       // holding the heading on the CELL
@@ -59,6 +60,7 @@ public abstract class BaseTeleOp extends OpMode {
         driveTrain = robot.createDrivetrain();
         driveTrain.setPositionP(positionP);
         autoAimer = new AutoAimer(robot, driveTrain::getPosition, isRedAlliance());
+        hiveTip = new HiveTipDetector(hardwareMap, driveTrain::getPosition);
     }
 
     @Override
@@ -75,6 +77,7 @@ public abstract class BaseTeleOp extends OpMode {
     @Override
     public void loop() {
         driveTrain.updatePosition();
+        hiveTip.update();
         handleAiming();
         handleDrive();
         handleIntake();
@@ -83,13 +86,14 @@ public abstract class BaseTeleOp extends OpMode {
         addTelemetry();
     }
 
-    // LB/RB start a route to that side's preset; sticks cancel it. When the route finishes, lock the
-    // heading on the CELL.
+    // Y starts a route to the preset of the CELL that's up (nothing if the tip isn't known); sticks cancel
+    // it. When the route finishes, lock the heading on the CELL.
     protected void handleAiming() {
-        if (gamepad1.leftBumperWasPressed()) {
-            routeToPreset(FieldMap.LEFT);
-        } else if (gamepad1.rightBumperWasPressed()) {
-            routeToPreset(FieldMap.RIGHT);
+        if (gamepad1.yWasPressed()) {
+            FieldMap.TargetSide upSide = hiveTip.getTip(isRedAlliance()).toTargetSide();
+            if (upSide != null) {
+                routeToPreset(upSide);
+            }
         }
 
         if (routing && (sticksMoved() || !driveTrain.isDriving())) {
@@ -173,6 +177,7 @@ public abstract class BaseTeleOp extends OpMode {
         telemetry.addData("Drive", isFieldCentric() ? "FIELD-CENTRIC" : "ROBOT-CENTRIC");
         telemetry.addData("Aim", routing ? "ROUTING" : aimLock ? "LOCKED" : "MANUAL");
         telemetry.addData("Target side", autoAimer.getActiveSide().name);
+        hiveTip.addTelemetry(telemetry, isRedAlliance());
         telemetry.addData("Heading error", autoAimer.getHeadingError());
         telemetry.addData("Shot point", autoAimer.getShot().name);
         telemetry.addData("Ready to shoot", autoAimer.readyToShoot());
@@ -180,6 +185,11 @@ public abstract class BaseTeleOp extends OpMode {
         robot.nectar.addTelemetry(telemetry, "Nectar");
         telemetry.addData("Intake", gamepad1.a ? "REVERSE" : intakeOn ? "IN" : "OFF");
         telemetry.update();
+    }
+
+    @Override
+    public void stop() {
+        hiveTip.close();
     }
 
     private boolean sticksMoved() {
