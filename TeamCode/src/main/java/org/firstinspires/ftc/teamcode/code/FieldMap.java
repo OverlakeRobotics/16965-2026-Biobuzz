@@ -11,7 +11,7 @@ import java.util.List;
 // field center (same as Pinpoint and the Path Planner). Numbers come from the Competition Manual
 // section 9 (TU06), +/- 1 in.
 //
-// Axes (TODO: verify on the robot by driving and reading the Pinpoint pose):
+// Axes (checked on the robot: facing red, forward is -Y and right is -X):
 //   +Y points toward the BLUE HIVE half of the field (same sign convention as last year's code),
 //   +X is 90 degrees clockwise from +Y when looking down at the field.
 //
@@ -46,9 +46,10 @@ public class FieldMap {
     };
 
     // The two CELLS of the blue HIVE. When the HIVE tips, the scoring CELL switches sides.
+    // LEFT/RIGHT are as the driver sees them, standing on their own alliance's side looking at the HIVE.
     // Aim points are estimated from the top-down field image (+/- ~1 in). Preset spots are in ShotTable.
-    public static final TargetSide LEFT = new TargetSide("LEFT", new Point(-13.5, 13));   // the -X CELL
-    public static final TargetSide RIGHT = new TargetSide("RIGHT", new Point(13.5, 13));  // the +X CELL
+    public static final TargetSide LEFT = new TargetSide("LEFT", new Point(13.5, 13));     // the +X CELL
+    public static final TargetSide RIGHT = new TargetSide("RIGHT", new Point(-13.5, 13));  // the -X CELL
 
     public static final class Point {
         public final double x, y;

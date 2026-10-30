@@ -49,18 +49,22 @@ public class AutoAimer {
     // The CELL to shoot at: the one on the robot's half of the field (the other one can't be scored from here)
     public FieldMap.TargetSide getActiveSide() {
         Pose2D bluePose = FieldMap.forAlliance(pose.get(), isRed);
-        return bluePose.getX(DistanceUnit.INCH) < 0 ? FieldMap.LEFT : FieldMap.RIGHT;
+        return bluePose.getX(DistanceUnit.INCH) > 0 ? FieldMap.LEFT : FieldMap.RIGHT;
     }
 
     public FieldMap.Point getAimPoint() {
-        return FieldMap.forAlliance(getActiveSide().aimPoint, isRed);
+        return getAimPoint(getActiveSide());
     }
 
-    // The preset spot for the active side, already facing the CELL
-    public Pose2D getPresetPose() {
-        FieldMap.Point preset = ShotTable.fromTableQuadrant(ShotTable.PRESET.position, getActiveSide(), isRed);
+    private FieldMap.Point getAimPoint(FieldMap.TargetSide side) {
+        return FieldMap.forAlliance(side.aimPoint, isRed);
+    }
+
+    // The preset spot for a side (FieldMap.LEFT or RIGHT), already facing that side's CELL
+    public Pose2D getPresetPose(FieldMap.TargetSide side) {
+        FieldMap.Point preset = ShotTable.fromTableQuadrant(ShotTable.PRESET.position, side, isRed);
         return new Pose2D(DistanceUnit.INCH, preset.x, preset.y, AngleUnit.DEGREES,
-                getAimHeadingFrom(preset.x, preset.y));
+                getAimHeadingFrom(preset.x, preset.y, getAimPoint(side)));
     }
 
     // ---- heading -----------------------------------------------------------------------------
@@ -68,14 +72,13 @@ public class AutoAimer {
     // Robot heading (degrees) that points the shooters (left side) at the CELL from where the robot is now
     public double getAimHeading() {
         Pose2D current = pose.get();
-        return getAimHeadingFrom(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH));
+        return getAimHeadingFrom(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH), getAimPoint());
     }
 
     // With the shooters at the robot center this is just bearing - 90. Since they sit forward/back of
     // center, the robot turns a bit more or less so the line out of the shooters' average position
     // passes through the CELL.
-    private double getAimHeadingFrom(double x, double y) {
-        FieldMap.Point aim = getAimPoint();
+    private double getAimHeadingFrom(double x, double y, FieldMap.Point aim) {
         double dx = aim.x - x;
         double dy = aim.y - y;
         double distance = Math.max(Math.hypot(dx, dy), 1e-6);

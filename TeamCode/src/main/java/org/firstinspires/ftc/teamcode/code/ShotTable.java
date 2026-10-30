@@ -3,12 +3,13 @@ package org.firstinspires.ftc.teamcode.code;
 // Spots on the field where we know good shooter settings (found with ManualTestTeleOp). AutoAimer uses
 // the settings of whichever spot is closest to the robot.
 //
-// Only written for ONE quadrant: the blue half, LEFT CELL side (x < 0). The field is symmetric, so the
+// Only written for ONE quadrant: the blue half, LEFT CELL side (x > 0). The field is symmetric, so the
 // same spots work in the other three quadrants: RIGHT side mirrors x, red rotates 180 degrees.
 // toTableQuadrant / fromTableQuadrant do the conversion, so nothing here needs duplicating.
 public class ShotTable {
-    // Where "go to range" (TeleOp Y) drives. Also a shot point. TODO: measure and tune.
-    public static final ShotPoint PRESET = new ShotPoint("Preset", -48, 13, 1500, 1500, 16.2, 17.04);
+    // Where the TeleOp bumpers drive (left bumper = LEFT side, right bumper = RIGHT side). Also a shot
+    // point. TODO: measure and tune.
+    public static final ShotPoint PRESET = new ShotPoint("Preset", 48, 13, 1500, 1500, 16.2, 17.04);
 
     // To add a spot: drive there in ManualTestTeleOp, tune until both shooters score, then copy the
     // Position X/Y, both target velocities and both hood angles from telemetry into a new line.
@@ -46,7 +47,7 @@ public class ShotTable {
     // Field position -> the matching spot in the table's quadrant
     public static FieldMap.Point toTableQuadrant(FieldMap.Point fieldPoint, boolean isRed) {
         FieldMap.Point blue = FieldMap.forAlliance(fieldPoint, isRed);
-        return new FieldMap.Point(-Math.abs(blue.x), blue.y);
+        return new FieldMap.Point(Math.abs(blue.x), blue.y);
     }
 
     // Table quadrant position -> the matching field position on the given side and alliance

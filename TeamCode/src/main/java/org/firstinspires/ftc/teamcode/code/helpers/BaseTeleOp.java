@@ -17,12 +17,13 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //
 // Controls (gamepad 1):
 //   Sticks         drive
-//   Y              drive to the active side's preset (around the HIVE legs) and face the CELL;
-//                  any stick cancels. Afterwards the heading stays locked on the CELL until you turn.
-//   Hold A         shoot: open both blockers, feed only when both flywheels are at speed and aimed
-//   X              toggle intake + transfer
-//   B              reverse intake + transfer (X to stop)
-//   D-pad right    flywheels on/off (on by default, always at the AutoAimer speed)
+//   LB / RB        drive to the LEFT / RIGHT preset (as the driver sees it, around the HIVE legs) and
+//                  face that CELL; any stick cancels. Afterwards the heading stays locked on the CELL
+//                  until you turn.
+//   Hold RT        shoot: blockers open while aimed at the CELL; the intake feeds except while a flywheel is low
+//   B              toggle intake + transfer
+//   Hold A         reverse intake + transfer
+// The flywheels always spin at the closest ShotTable point's speeds.
 @Config
 public abstract class BaseTeleOp extends OpMode {
     public static double driveVelocity = 2800;
@@ -32,20 +33,19 @@ public abstract class BaseTeleOp extends OpMode {
     public static double stickDeadband = 0.05;
     // Field-centric "forward" for BLUE (degrees); red is this + 180. TODO: check on the field.
     public static double blueFieldCentricOffset = 90;
-    // Used when TeleOp is started without running Auto first (blue side; red is rotated). TODO: real start spot.
-    public static double defaultStartX = -64;
-    public static double defaultStartY = -33;
-    public static double defaultStartHeading = -90;
+    // Used when TeleOp is started without running Auto first: field center, facing your own HIVE half
+    // (blue faces blue; red is rotated, so it faces red)
+    public static double defaultStartX = 0;
+    public static double defaultStartY = 0;
+    public static double defaultStartHeading = 90;
 
     protected RobotHardware robot;
     protected OdometryHolonomicDrivetrain driveTrain;
     protected AutoAimer autoAimer;
 
-    protected boolean routing = false;       // following the Y route
+    protected boolean routing = false;       // following a preset route
     protected boolean aimLock = false;       // holding the heading on the CELL
-    protected boolean flywheelsOn = true;
     protected boolean intakeOn = false;
-    protected boolean intakeReversed = false;
     protected boolean shooting = false;
 
     protected abstract boolean isRedAlliance();
@@ -83,14 +83,13 @@ public abstract class BaseTeleOp extends OpMode {
         addTelemetry();
     }
 
-    // Y starts a route to the preset; sticks cancel it. When the route finishes, lock the heading on the CELL.
+    // LB/RB start a route to that side's preset; sticks cancel it. When the route finishes, lock the
+    // heading on the CELL.
     protected void handleAiming() {
-        if (gamepad1.yWasPressed()) {
-            driveTrain.setVelocity((int) routeVelocity);
-            driveTrain.setTolerance(routeTolerance);
-            driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), autoAimer.getPresetPose()));
-            routing = true;
-            aimLock = false;
+        if (gamepad1.leftBumperWasPressed()) {
+            routeToPreset(FieldMap.LEFT);
+        } else if (gamepad1.rightBumperWasPressed()) {
+            routeToPreset(FieldMap.RIGHT);
         }
 
         if (routing && (sticksMoved() || !driveTrain.isDriving())) {
@@ -101,6 +100,14 @@ public abstract class BaseTeleOp extends OpMode {
         if (aimLock && Math.abs(gamepad1.right_stick_x) > stickDeadband) {
             aimLock = false;
         }
+    }
+
+    private void routeToPreset(FieldMap.TargetSide side) {
+        driveTrain.setVelocity((int) routeVelocity);
+        driveTrain.setTolerance(routeTolerance);
+        driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), autoAimer.getPresetPose(side)));
+        routing = true;
+        aimLock = false;
     }
 
     protected void handleDrive() {
@@ -124,45 +131,37 @@ public abstract class BaseTeleOp extends OpMode {
     }
 
     protected void handleIntake() {
-        if (gamepad1.xWasPressed()) {
-            // From reverse, X stops; otherwise it toggles intaking
-            intakeOn = !intakeOn && !intakeReversed;
-            intakeReversed = false;
-        }
         if (gamepad1.bWasPressed()) {
-            intakeOn = true;
-            intakeReversed = true;
+            intakeOn = !intakeOn;
         }
     }
 
-    // Flywheels always track the AutoAimer speed. Holding A opens the blockers and feeds only when ready;
-    // otherwise the intake does what X/B set.
+    // Flywheels and hoods are always set to the closest ShotTable point. Holding RT shoots whenever ready;
+    // otherwise the intake does what B/A set.
     protected void handleShooting() {
-        if (gamepad1.dpadRightWasPressed()) {
-            flywheelsOn = !flywheelsOn;
-        }
-        if (flywheelsOn) {
-            autoAimer.aimShooters();
-        } else {
-            robot.setShooterVelocities(0, 0);
-        }
+        autoAimer.aimShooters();
 
-        shooting = gamepad1.a;
+        shooting = gamepad1.right_trigger > 0.5;
         if (shooting) {
-            robot.openBlockers();
-            if (autoAimer.readyToShoot()) {
+            // Blockers stay open while aimed; the intake pauses whenever a flywheel is low
+            if (autoAimer.isHeadingOnTarget()) {
+                robot.openBlockers();
+            } else {
+                robot.closeBlockers();
+            }
+            if (autoAimer.isHeadingOnTarget() && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
                 robot.intake.in();
             } else {
                 robot.intake.stop();
             }
         } else {
             robot.closeBlockers();
-            if (!intakeOn) {
-                robot.intake.stop();
-            } else if (intakeReversed) {
+            if (gamepad1.a) {
                 robot.intake.reverse();
-            } else {
+            } else if (intakeOn) {
                 robot.intake.in();
+            } else {
+                robot.intake.stop();
             }
         }
     }
@@ -179,7 +178,7 @@ public abstract class BaseTeleOp extends OpMode {
         telemetry.addData("Ready to shoot", autoAimer.readyToShoot());
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");
-        telemetry.addData("Intake", !intakeOn ? "OFF" : intakeReversed ? "REVERSE" : "IN");
+        telemetry.addData("Intake", gamepad1.a ? "REVERSE" : intakeOn ? "IN" : "OFF");
         telemetry.update();
     }
 
