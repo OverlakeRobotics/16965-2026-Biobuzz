@@ -37,8 +37,6 @@ public class FieldMap {
     public static final double HIVE_FRAME_WIDTH = 49.46;
     public static final double HIVE_FRAME_DEPTH = 38.95;
     public static final double HIVE_PIVOT_HEIGHT = 43.95;
-    // Each HIVE has 2 CELLS ~18.8 in apart; the HIVE tips so one CELL faces up at a time
-    public static final double HIVE_CELL_SPACING = 18.8;
 
     // The two leg bases are the only parts of the HIVE the robot can't drive through. Each is a thin
     // bar along X at Y = +/- HIVE_FRAME_WIDTH / 2. They're symmetric, so the same for both alliances.
@@ -48,17 +46,9 @@ public class FieldMap {
     };
 
     // The two CELLS of the blue HIVE. When the HIVE tips, the scoring CELL switches sides.
-    // TODO: measure aim points and preset spots. These are placeholders from the manual drawings.
-    public static final TargetSide LEFT = new TargetSide(
-            "LEFT",
-            new Point(-HIVE_CELL_SPACING / 2, 12),   // aim point: the -X CELL
-            new Point(-48, 12)                       // preset: where "go to range" drives
-    );
-    public static final TargetSide RIGHT = new TargetSide(
-            "RIGHT",
-            new Point(HIVE_CELL_SPACING / 2, 12),    // aim point: the +X CELL
-            new Point(48, 12)
-    );
+    // Aim points are estimated from the top-down field image (+/- ~1 in). Preset spots are in ShotTable.
+    public static final TargetSide LEFT = new TargetSide("LEFT", new Point(-13.5, 13));   // the -X CELL
+    public static final TargetSide RIGHT = new TargetSide("RIGHT", new Point(13.5, 13));  // the +X CELL
 
     public static final class Point {
         public final double x, y;
@@ -73,16 +63,14 @@ public class FieldMap {
         }
     }
 
-    // One CELL to shoot at, plus the spot the robot drives to before shooting at it (blue side)
+    // One CELL to shoot at (blue side)
     public static final class TargetSide {
         public final String name;
         public final Point aimPoint;
-        public final Point presetPoint;
 
-        public TargetSide(String name, Point aimPoint, Point presetPoint) {
+        public TargetSide(String name, Point aimPoint) {
             this.name = name;
             this.aimPoint = aimPoint;
-            this.presetPoint = presetPoint;
         }
     }
 

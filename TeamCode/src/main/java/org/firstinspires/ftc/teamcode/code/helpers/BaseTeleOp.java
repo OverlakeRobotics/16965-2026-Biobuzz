@@ -175,8 +175,7 @@ public abstract class BaseTeleOp extends OpMode {
         telemetry.addData("Aim", routing ? "ROUTING" : aimLock ? "LOCKED" : "MANUAL");
         telemetry.addData("Target side", autoAimer.getActiveSide().name);
         telemetry.addData("Heading error", autoAimer.getHeadingError());
-        telemetry.addData("Pollen distance", autoAimer.getPollenDistance());
-        telemetry.addData("Nectar distance", autoAimer.getNectarDistance());
+        telemetry.addData("Shot point", autoAimer.getShot().name);
         telemetry.addData("Ready to shoot", autoAimer.readyToShoot());
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");

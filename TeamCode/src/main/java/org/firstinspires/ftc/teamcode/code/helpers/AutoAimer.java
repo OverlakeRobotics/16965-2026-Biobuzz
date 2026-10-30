@@ -7,33 +7,27 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.code.FieldMap;
 import org.firstinspires.ftc.teamcode.code.RobotHardware;
+import org.firstinspires.ftc.teamcode.code.ShotTable;
 
 import java.util.function.Supplier;
 
 // Aiming math, shared by TeleOp and Auto: which CELL to shoot at, which way to face, how fast to spin
-// each flywheel and where to put each hood. Field positions come from FieldMap.
+// each flywheel and where to put each hood. Field positions come from FieldMap, shooter settings from
+// ShotTable.
 //
-// Both shooters face out the robot's LEFT side and fire into the same CELL at the same time. They sit
-// at different points along the robot, so each gets its own distance (and so its own speed and hood).
+// Both shooters face out the robot's LEFT side and fire into the same CELL at the same time.
 @Config
 public class AutoAimer {
-    // Where each shooter's exit sits on the robot, inches from the robot center.
-    // Forward = toward the robot's front, left = toward the side the shooters face.
-    // Nectar is in front of center and pollen behind it (CAD).
+    // Where each shooter's exit sits on the robot, inches in front of the robot center (CAD).
+    // Nectar is in front of center and pollen behind it.
     public static double nectarForwardOffset = 3.732;
     public static double pollenForwardOffset = -2.828;
-    public static double shooterLeftOffset = 7;   // TODO: measure
-    // Height of the ball's exit above the tiles with the hood at 0 degrees (CAD), for the shot calculation
-    public static final double LAUNCH_HEIGHT_AT_ZERO_ANGLE = 15.039;
+    // Height of the ball's exit above the tiles (CAD), for the shot calculation. Treated as the same for
+    // both shooters at every hood angle.
+    public static final double LAUNCH_HEIGHT = 15.039;
 
     // How close the heading has to be to the aim heading to shoot (degrees)
     public static double headingTolerance = 3;
-
-    // PLACEHOLDER shot settings, used until the real calculation exists (see the get*Velocity / get*Hood methods)
-    public static double defaultPollenVelocity = 1500;
-    public static double defaultNectarVelocity = 1500;
-    public static double defaultPollenHood = 0.0;
-    public static double defaultNectarHood = 0.0;
 
     private final RobotHardware robot;
     private final Supplier<Pose2D> pose;
@@ -52,8 +46,7 @@ public class AutoAimer {
 
     // ---- target ------------------------------------------------------------------------------
 
-    // The CELL to shoot at. For now: whichever side of the field the robot is on.
-    // TODO: when the HIVE tips the scoring CELL changes; replace this with a driver button or detection.
+    // The CELL to shoot at: the one on the robot's half of the field (the other one can't be scored from here)
     public FieldMap.TargetSide getActiveSide() {
         Pose2D bluePose = FieldMap.forAlliance(pose.get(), isRed);
         return bluePose.getX(DistanceUnit.INCH) < 0 ? FieldMap.LEFT : FieldMap.RIGHT;
@@ -65,7 +58,7 @@ public class AutoAimer {
 
     // The preset spot for the active side, already facing the CELL
     public Pose2D getPresetPose() {
-        FieldMap.Point preset = FieldMap.forAlliance(getActiveSide().presetPoint, isRed);
+        FieldMap.Point preset = ShotTable.fromTableQuadrant(ShotTable.PRESET.position, getActiveSide(), isRed);
         return new Pose2D(DistanceUnit.INCH, preset.x, preset.y, AngleUnit.DEGREES,
                 getAimHeadingFrom(preset.x, preset.y));
     }
@@ -100,55 +93,20 @@ public class AutoAimer {
         return Math.abs(getHeadingError()) <= headingTolerance;
     }
 
-    // ---- distance ----------------------------------------------------------------------------
+    // ---- shot settings -----------------------------------------------------------------------
 
-    public double getPollenDistance() {
-        return getShooterDistance(pollenForwardOffset);
-    }
-
-    public double getNectarDistance() {
-        return getShooterDistance(nectarForwardOffset);
-    }
-
-    // Distance (inches, along the floor) from a shooter's exit to the CELL
-    private double getShooterDistance(double forwardOffset) {
+    // The ShotTable spot closest to the robot
+    public ShotTable.ShotPoint getShot() {
         Pose2D current = pose.get();
-        double h = current.getHeading(AngleUnit.RADIANS);
-        double shooterX = current.getX(DistanceUnit.INCH) + forwardOffset * Math.cos(h) - shooterLeftOffset * Math.sin(h);
-        double shooterY = current.getY(DistanceUnit.INCH) + forwardOffset * Math.sin(h) + shooterLeftOffset * Math.cos(h);
-        FieldMap.Point aim = getAimPoint();
-        return Math.hypot(aim.x - shooterX, aim.y - shooterY);
+        return ShotTable.closest(new FieldMap.Point(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH)), isRed);
     }
 
-    // ---- shot settings (PLACEHOLDERS) ---------------------------------------------------------
-    // TODO: replace the insides of these four with the real calculation (lookup table from
-    //   ManualTestTeleOp data, or physics). Callers already pass the distance, so nothing else changes.
-
-    // Flywheel velocity (ticks/s) for the pollen shooter at this distance (inches)
-    public double getPollenVelocity(double distance) {
-        return defaultPollenVelocity;
-    }
-
-    public double getNectarVelocity(double distance) {
-        return defaultNectarVelocity;
-    }
-
-    // Hood servo position (0 to 1) for the pollen shooter at this distance (inches)
-    public double getPollenHood(double distance) {
-        return defaultPollenHood;
-    }
-
-    public double getNectarHood(double distance) {
-        return defaultNectarHood;
-    }
-
-    // Sets both flywheels and hoods for the current position
+    // Sets both flywheels and hoods to the closest shot point's settings
     public void aimShooters() {
-        double pollenDistance = getPollenDistance();
-        double nectarDistance = getNectarDistance();
-        robot.setShooterVelocities(getPollenVelocity(pollenDistance), getNectarVelocity(nectarDistance));
-        robot.pollen.setHoodPosition(getPollenHood(pollenDistance));
-        robot.nectar.setHoodPosition(getNectarHood(nectarDistance));
+        ShotTable.ShotPoint shot = getShot();
+        robot.setShooterVelocities(shot.pollenVelocity, shot.nectarVelocity);
+        robot.pollen.setHoodAngle(shot.pollenHoodAngle);
+        robot.nectar.setHoodAngle(shot.nectarHoodAngle);
     }
 
     // ---- ready -------------------------------------------------------------------------------
