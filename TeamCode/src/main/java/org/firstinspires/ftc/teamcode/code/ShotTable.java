@@ -12,10 +12,10 @@ import com.acmerobotics.dashboard.config.Config;
 public class ShotTable {
     // The preset: where the TeleOp bumpers drive (left bumper = LEFT side, right bumper = RIGHT side).
     // Also a shot point. Tunable live in the dashboard (ShotTable). TODO: measure and tune.
-     public static double presetX = 48;
+     public static double presetX = 50;
     public static double presetY = 13;
-    public static double presetPollenVelocity = 1400;   // ticks/s
-    public static double presetNectarVelocity = 2000;
+    public static double presetPollenVelocity = 1500;   // ticks/s
+    public static double presetNectarVelocity = 1900;
     public static double presetPollenHoodAngle = 16.2;  // degrees
     public static double presetNectarHoodAngle = 17.04;
 
