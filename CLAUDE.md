@@ -109,18 +109,19 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 - Ask questions until the requirement is clear before writing a lot of code; give the plan first when asked for one.
 - Don't commit or push unless asked.
 
-## Known issues and open items
+## Lessons learned (principles)
 
-- Dashboard edits to the old nested `ShotTable.PRESET` object did not change the flywheel targets on the robot; root cause never found. It was switched to flat `preset…` fields (not yet confirmed on the robot). `RobotHardware.pollenPIDF` / `nectarPIDF` are still nested `PIDFCoefficients` objects. If their edits don't apply either, switch them to flat `pollenP/I/D/F` fields. `BaseTeleOp` shows `Runtime (s)` so you can tell whether telemetry is live.
-- Flywheels were measured at ~1400/1440 against a 1500 target, so both read FLYWHEEL LOW and RT never feeds. Raise F (then P) in the flywheel PIDF.
-- Telemetry "Ready to shoot" uses `AutoAimer.readyToShoot()` (both flywheels within tolerance either way + heading, no position check). That's not the same rule RT uses. Auto also uses `readyToShoot()` and has no position check.
-- `positionP` is only sent to the motors in `init()`; dashboard changes need an OpMode restart.
-- No bulk caching: each flywheel velocity is read up to 4 times per loop, each a separate hub call. Fix if loop time matters: `LynxModule` MANUAL bulk caching + `clearBulkCache()` at the start of each loop.
-- The robot config must have a servo named `"flower"` (and motors `intake` and `transfer`); a missing name makes every OpMode fail at init.
-- Placeholders still to measure/tune: preset spot (48, 13), all shot-table velocities and hood angles, `Shooter.HOOD_SERVO_RANGE_DEGREES = 300` (servo model unconfirmed), `Flower` positions.
-- CELL aim point (13.5, 13) was estimated from a top-down field image (±1 in). From the presets, `cellAimY` matters a lot (1 in ≈ 1.7°), `cellAimX` barely matters. The two shooters land about ±3.3 in either side of the aim point.
-- `FieldMap.ROBOT_LENGTH/WIDTH` are 18 × 18 but the comment says "CAD" (CAD was 15.118 × 16.378). Confirm which is intended; it changes the keep-out zones.
-- Unused right now: `FieldMap.Rect.intersects`, `FieldMap.HIVE_PIVOT_HEIGHT`, `AutoAimer.LAUNCH_HEIGHT` (kept for a future physics shot calculation).
-- `OdometryHolonomicDrivetrain` has old TODOs (untested straight-line angle correction, line ~118). Check there first if preset routes curve or wobble.
-- No Auto routines exist for this robot yet (only `BaseAuto` and `PathPlanner`).
-- The `hive-tip-detection` branch replaces LB/RB with a single Y button driven by `HiveTipDetector`, and adds a flower servo to `ManualTestTeleOp` on RB. Merging it will conflict with `BaseTeleOp` and `ManualTestTeleOp` on master.
+- Prove telemetry is live before deciding a change "didn't work". A stopped OpMode leaves the last telemetry on screen; keep a counter like `Runtime (s)` visible.
+- Prefer plain `public static` primitive fields for dashboard tuning. Nested config objects have been unreliable for us; don't rely on them for values you need to tune live.
+- Know which values are live and which are only sent at init (motor PIDF/position P, start poses). Either re-send on change or say in a comment that a restart is needed.
+- Telemetry should show the same condition the code acts on. A "ready" readout that uses a different rule than the actual shooting logic is misleading.
+- Check the basics before tuning on top of them: confirm the flywheels actually reach their target speed before tuning shot values.
+- Read each piece of hardware once per loop and reuse the value (or use bulk caching). Repeated reads cost loop time and can disagree within one loop.
+- Every name `RobotHardware` asks for must exist in the robot config. Adding a device affects every OpMode, not just the one that uses it.
+- Placeholders are marked `TODO` and treated as guesses until measured on the real field or robot.
+- Before tuning a value, work out how sensitive the result is to it, and spend effort on the values that matter.
+- Comments must match the values next to them. When a value changes, update its comment (e.g. where a number came from).
+- Remove code that becomes unused instead of leaving it around.
+- Settle conventions (axes, headings, LEFT/RIGHT) by testing on the robot, then write them down here.
+- When behavior from the older `system/` library looks wrong, check its TODOs first.
+- Big control or behavior changes on a branch will conflict with master; agree on them with the team before building.
