@@ -1,0 +1,205 @@
+{
+  "version": 2,
+  "createdAt": "2026-10-31T23:32:48.144Z",
+  "alliance": "blue",
+  "start": {
+    "x": -63,
+    "y": 15,
+    "h": -90
+  },
+  "points": [
+    {
+      "x": -50,
+      "y": 13,
+      "h": -89.29
+    },
+    {
+      "x": -42,
+      "y": 63,
+      "h": 180
+    },
+    {
+      "x": -60,
+      "y": 61,
+      "h": 180
+    },
+    {
+      "x": 38,
+      "y": 44,
+      "h": 90
+    },
+    {
+      "x": 50,
+      "y": 13,
+      "h": 90.71
+    },
+    {
+      "x": 42,
+      "y": 57,
+      "h": 90
+    }
+  ],
+  "segments": [
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": -50,
+        "y": 13,
+        "h": -89.29
+      },
+      "samples": [
+        {
+          "x": -50,
+          "y": 13,
+          "h": -89.29
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": -42,
+        "y": 63,
+        "h": 180
+      },
+      "samples": [
+        {
+          "x": -42,
+          "y": 63,
+          "h": 180
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": -60,
+        "y": 61,
+        "h": 180
+      },
+      "samples": [
+        {
+          "x": -60,
+          "y": 61,
+          "h": 180
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": 38,
+        "y": 44,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 38,
+          "y": 44,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": 50,
+        "y": 13,
+        "h": 90.71
+      },
+      "samples": [
+        {
+          "x": 50,
+          "y": 13,
+          "h": 90.71
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": 42,
+        "y": 57,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 42,
+          "y": 57,
+          "h": 90
+        }
+      ]
+    }
+  ],
+  "headingMode": "straight",
+  "endHeading": 90,
+  "snapInches": 3,
+  "robot": {
+    "length": 18,
+    "width": 18
+  },
+  "tags": [
+    {
+      "index": 0,
+      "segment": -1,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 1,
+      "segment": 0,
+      "name": "pause",
+      "value": 2
+    },
+    {
+      "index": 1,
+      "segment": 0,
+      "name": "shoot",
+      "value": 4
+    },
+    {
+      "index": 2,
+      "segment": 1,
+      "name": "velocity",
+      "value": 40
+    },
+    {
+      "index": 3,
+      "segment": 2,
+      "name": "velocity",
+      "value": 100
+    },
+    {
+      "index": 4,
+      "segment": 3,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 5,
+      "segment": 4,
+      "name": "pause",
+      "value": 2
+    },
+    {
+      "index": 5,
+      "segment": 4,
+      "name": "shoot",
+      "value": 4
+    },
+    {
+      "index": 0,
+      "segment": -1,
+      "name": "intake",
+      "value": 1
+    }
+  ],
+  "globals": [],
+  "tagBindings": []
+}

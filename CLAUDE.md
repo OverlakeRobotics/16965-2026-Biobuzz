@@ -21,7 +21,7 @@ All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Save
 - `helpers/`: shared logic. `AutoAimer` (active CELL, aim heading, preset pose, closest shot point, position/heading checks), `BaseTeleOp` (all competition TeleOp logic; subclasses only pick alliance and field/robot-centric), `BaseAuto` (follows a Path Planner route with Pedro Pathing and runs route tags; stores `lastPose` for TeleOp).
 - `opmodes/`: `ManualTestTeleOp` (temporary; for finding shot-table values by hand), `MotorTester`, `PathPlanner` (runs whatever route is uploaded live through `PathServer`).
 - `opmodes/TeleOps/`: `Red`/`Blue` × `Field`/`Robot`-centric TeleOps, each a tiny subclass of `BaseTeleOp`.
-- `opmodes/Autos/`: `Red`/`Blue` × `BothCells` (shoot RIGHT, GARDEN pickup, shoot LEFT, park) / `OneCell` (shoot RIGHT twice, park) Autos, each a tiny subclass of `BaseAuto` pointing at its `pathJsons/biobuzz/` route.
+- `opmodes/Autos/`: `Red`/`Blue` × `BothCells` (shoot RIGHT, GARDEN pickup, shoot LEFT, park) / `OneCell` (shoot RIGHT twice, park) / `DelayedShot` (start on the +X wall at (63, 40), clear of the FLOWER, wait 17 s, shoot LEFT, park) Autos, each a tiny subclass of `BaseAuto` pointing at its `pathJsons/biobuzz/` route.
 
 ### `system/`: reusable drivetrain, odometry and path-following library (from earlier seasons)
 - `BasicHolonomicDrivetrain`: mecanum motor control (velocity/position/stop), counts-per-inch constants, `setPositionP`.
