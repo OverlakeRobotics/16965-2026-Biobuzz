@@ -11,7 +11,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 ## TeamCode layout
 
-All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Saved Path Planner routes (JSON) live in `TeamCode/src/main/assets/pathJsons/` (last season's are in `decode/`).
+All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Saved Path Planner routes (JSON) live in `TeamCode/src/main/assets/pathJsons/`: this season's in `biobuzz/`, last season's in `decode/`. Red routes are the blue ones rotated 180° (`forAlliance`).
 
 ### `code/`: current robot code (this season)
 - `RobotHardware`: the ONLY place that touches `hardwareMap`. Builds the two shooters (`pollen` = flywheelP/hoodP/blockerP, `nectar` = flywheelN/hoodN/blockerN), the `intake` (intake + transfer motors), the `flower` servo, and (via `createDrivetrain()`) the TeleOp odometry drivetrain with the Pinpoint. Flywheel PIDF (`pollenPIDF`, `nectarPIDF`) is tunable in FTC Dashboard.
@@ -21,6 +21,7 @@ All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Save
 - `helpers/`: shared logic. `AutoAimer` (active CELL, aim heading, preset pose, closest shot point, position/heading checks), `BaseTeleOp` (all competition TeleOp logic; subclasses only pick alliance and field/robot-centric), `BaseAuto` (follows a Path Planner route with Pedro Pathing and runs route tags; stores `lastPose` for TeleOp).
 - `opmodes/`: `ManualTestTeleOp` (temporary; for finding shot-table values by hand), `MotorTester`, `PathPlanner` (runs whatever route is uploaded live through `PathServer`).
 - `opmodes/TeleOps/`: `Red`/`Blue` × `Field`/`Robot`-centric TeleOps, each a tiny subclass of `BaseTeleOp`.
+- `opmodes/Autos/`: `Red`/`Blue` × `BothCells` (shoot RIGHT, GARDEN pickup, shoot LEFT, park) / `OneCell` (shoot RIGHT twice, park) Autos, each a tiny subclass of `BaseAuto` pointing at its `pathJsons/biobuzz/` route.
 
 ### `system/`: reusable drivetrain, odometry and path-following library (from earlier seasons)
 - `BasicHolonomicDrivetrain`: mecanum motor control (velocity/position/stop), counts-per-inch constants, `setPositionP`.
@@ -88,12 +89,13 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 |---|---|
 | Sticks | Drive (field- or robot-centric by OpMode). Field-centric forward: blue → −Y (right → −X), red → +Y (`blueFieldCentricOffset = -90`, red + 180). |
 | LB / RB | Drive to the LEFT / RIGHT preset around the HIVE bars, arrive facing the CELL, then HOLD that pose (pushes back if bumped) until any stick moves. |
+| D-pad up / down | Pollen target speed +/- `velocityStep` (50 ticks/s). Hold LT (> 0.3): nectar instead. Offsets add to the ShotTable speeds at every point and last for the TeleOp run. |
 | Hold RT (> 0.3) | Shoot. Blockers open while heading is within `headingTolerance` (3°) AND within `positionTolerance` (6 in) of a shot point. Intake feeds while in position, pauses whenever either flywheel is BELOW speed (over speed is fine). A/B ignored while shooting. |
 | B | Toggle intake + transfer |
 | Hold A | Reverse intake + transfer |
 | X | Toggle flower open (0.47) / closed (0). Starts open at init. |
 
-- Flywheels ALWAYS spin, at the closest shot point's velocities (recomputed every loop). No off switch.
+- Flywheels ALWAYS spin, at the closest shot point's velocities plus the D-pad offsets (recomputed every loop). No off switch.
 - No aim lock: after a preset the hold keeps the heading; once you drive, turning is manual.
 - TeleOp default start (no Auto first): (0, 0), blue facing +Y (90°), red facing −Y (−90°). After Auto, TeleOp starts from `BaseAuto.lastPose` (static, lost on app restart/deploy).
 - TeleOp preset driving uses the team's `OdometryHolonomicDrivetrain`, NOT Pedro (tuned by `routeVelocity`, `routeTolerance`, `positionP`). Pedro is only used in Auto.

@@ -19,12 +19,13 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //   Sticks         drive
 //   LB / RB        drive to the LEFT / RIGHT preset (as the driver sees it, around the HIVE legs) and
 //                  face that CELL, then hold there; any stick cancels
+//   D-pad up/down  pollen target speed +/- velocityStep (hold LT: nectar instead), on top of the ShotTable
 //   Hold RT        shoot: blockers open while aimed at the CELL and within AutoAimer.positionTolerance of a
 //                  ShotTable spot; the intake feeds except while a flywheel is low
 //   B              toggle intake + transfer
 //   Hold A         reverse intake + transfer
 //   X              toggle the flower mechanism open/closed (starts open)
-// The flywheels always spin at the closest ShotTable point's speeds.
+// The flywheels always spin at the closest ShotTable point's speeds, plus the D-pad offsets.
 @Config
 public abstract class BaseTeleOp extends OpMode {
     public static double driveVelocity = 2800;
@@ -32,6 +33,7 @@ public abstract class BaseTeleOp extends OpMode {
     public static double routeTolerance = 4;     // inches; how close to a waypoint before moving to the next
     public static double positionP = 3;
     public static double stickDeadband = 0.05;
+    public static double velocityStep = 50;      // ticks/s per D-pad press
     // Field-centric "forward" for BLUE (degrees): stick up drives toward -Y and stick right toward -X.
     // Red is this + 180 (stick up toward +Y, stick right toward +X).
     public static double blueFieldCentricOffset = -90;
@@ -48,6 +50,9 @@ public abstract class BaseTeleOp extends OpMode {
     protected boolean routing = false;       // driving to, or holding at, a preset
     protected boolean intakeOn = false;
     protected boolean shooting = false;
+    // D-pad changes to the ShotTable velocities (ticks/s), kept for the rest of this TeleOp run
+    protected double pollenOffset = 0;
+    protected double nectarOffset = 0;
 
     protected abstract boolean isRedAlliance();
 
@@ -79,6 +84,7 @@ public abstract class BaseTeleOp extends OpMode {
         handleAiming();
         handleDrive();
         handleIntake();
+        handleSpeedAdjust();
         handleShooting();
         driveTrain.drive();
         addTelemetry();
@@ -129,10 +135,23 @@ public abstract class BaseTeleOp extends OpMode {
         }
     }
 
-    // Flywheels and hoods are always set to the closest ShotTable point. Holding RT shoots whenever ready;
+    // D-pad up/down changes pollen's target speed; with LT held it changes nectar's instead
+    protected void handleSpeedAdjust() {
+        double change = 0;
+        if (gamepad1.dpadUpWasPressed()) change += velocityStep;
+        if (gamepad1.dpadDownWasPressed()) change -= velocityStep;
+        if (change == 0) return;
+        if (gamepad1.left_trigger > 0.3) {
+            nectarOffset += change;
+        } else {
+            pollenOffset += change;
+        }
+    }
+
+    // Flywheels and hoods are always set to the closest ShotTable point (plus the D-pad offsets). Holding RT shoots whenever ready;
     // otherwise the intake does what B/A set.
     protected void handleShooting() {
-        autoAimer.aimShooters();
+        autoAimer.aimShooters(pollenOffset, nectarOffset);
 
         shooting = gamepad1.right_trigger > 0.3;
         if (shooting) {
@@ -173,6 +192,7 @@ public abstract class BaseTeleOp extends OpMode {
         telemetry.addData("Ready to shoot", autoAimer.readyToShoot());
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");
+        telemetry.addData("Speed offset", "Pollen %+.0f, Nectar %+.0f", pollenOffset, nectarOffset);
         telemetry.addData("Intake", gamepad1.a ? "REVERSE" : intakeOn ? "IN" : "OFF");
         telemetry.addData("Flower", robot.flower.isOpen() ? "OPEN" : "CLOSED");
         telemetry.update();

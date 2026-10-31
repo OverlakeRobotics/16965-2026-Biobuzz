@@ -20,7 +20,8 @@ import java.util.List;
 //     parallel(follow(follower, chunkPath),
 //              sequential(waitUntil(pathIndex >= tagSubPath), tagCommand), ...)
 // and between chunks (at every stop) it is
-//     sequential(hold(follower, poseAtStop), parallel(wait(pauseSeconds), stopTagCommands...))
+//     sequential(hold(follower, poseAtStop), wait(pauseSeconds), parallel(stopTagCommands...))
+// The pause comes first, so a pause on a shoot node waits before shooting starts.
 //
 // Tag commands come from a TagHandler the OpMode implements. Two tags are built in:
 //   velocity -> instant command setting Foresight's maxPathSpeed to value / 100 (a value <= 1 is
@@ -94,16 +95,15 @@ public final class PathPlanRunner {
             PedroPathBuilder.Chunk chunk = chunks.get(ci);
 
             if (chunk.stopBefore) {
-                List<Command> atStop = new ArrayList<>();
+                steps.add(PedroCommands.hold(follower, chunk.startPose));
                 double pause = chunk.pauseSeconds();
-                if (pause > 0) atStop.add(Commands.waitMs(pause * 1000.0));
+                if (pause > 0) steps.add(Commands.waitMs(pause * 1000.0));
+                List<Command> atStop = new ArrayList<>();
                 for (PedroPathBuilder.PlacedTag t : chunk.stopTags()) {
                     Command c = commandFor(follower, handler, t.tag, new TagContext(follower, chunk, ci, 0, true));
                     if (c != null) atStop.add(c);
                 }
-                Command hold = PedroCommands.hold(follower, chunk.startPose);
-                if (atStop.isEmpty()) steps.add(hold);
-                else steps.add(Groups.sequential(hold, Groups.parallel(atStop.toArray(new Command[0]))));
+                if (!atStop.isEmpty()) steps.add(Groups.parallel(atStop.toArray(new Command[0])));
             }
 
             List<Command> during = new ArrayList<>();

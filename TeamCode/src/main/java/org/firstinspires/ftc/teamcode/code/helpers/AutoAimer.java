@@ -120,8 +120,13 @@ public class AutoAimer {
 
     // Sets both flywheels and hoods to the closest shot point's settings
     public void aimShooters() {
+        aimShooters(0, 0);
+    }
+
+    // Same, with each flywheel's velocity raised (or lowered) by an offset in ticks/s
+    public void aimShooters(double pollenOffset, double nectarOffset) {
         ShotTable.ShotPoint shot = getShot();
-        robot.setShooterVelocities(shot.pollenVelocity, shot.nectarVelocity);
+        robot.setShooterVelocities(shot.pollenVelocity + pollenOffset, shot.nectarVelocity + nectarOffset);
         robot.pollen.setHoodAngle(shot.pollenHoodAngle);
         robot.nectar.setHoodAngle(shot.nectarHoodAngle);
     }
