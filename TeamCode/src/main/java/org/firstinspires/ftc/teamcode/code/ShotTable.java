@@ -1,45 +1,63 @@
 package org.firstinspires.ftc.teamcode.code;
 
+import com.acmerobotics.dashboard.config.Config;
+
 // Spots on the field where we know good shooter settings (found with ManualTestTeleOp). AutoAimer uses
 // the settings of whichever spot is closest to the robot.
 //
-// Only written for ONE quadrant: the blue half, LEFT CELL side (x > 0). The field is symmetric, so the
+// Only written for ONE quadrant: the blue half, LEFT CELL side (+X, +Y). The field is symmetric, so the
 // same spots work in the other three quadrants: RIGHT side mirrors x, red rotates 180 degrees.
 // toTableQuadrant / fromTableQuadrant do the conversion, so nothing here needs duplicating.
+@Config
 public class ShotTable {
-    // Where the TeleOp bumpers drive (left bumper = LEFT side, right bumper = RIGHT side). Also a shot
-    // point. TODO: measure and tune.
-    public static final ShotPoint PRESET = new ShotPoint("Preset", 48, 13, 1500, 1500, 16.2, 17.04);
+    // The preset: where the TeleOp bumpers drive (left bumper = LEFT side, right bumper = RIGHT side).
+    // Also a shot point. Tunable live in the dashboard (ShotTable). TODO: measure and tune.
+     public static double presetX = 48;
+    public static double presetY = 13;
+    public static double presetPollenVelocity = 1500;   // ticks/s
+    public static double presetNectarVelocity = 1500;
+    public static double presetPollenHoodAngle = 16.2;  // degrees
+    public static double presetNectarHoodAngle = 17.04;
 
-    // To add a spot: drive there in ManualTestTeleOp, tune until both shooters score, then copy the
-    // Position X/Y, both target velocities and both hood angles from telemetry into a new line.
-    public static final ShotPoint[] POINTS = {
-            PRESET,
+    // More spots. To add one: drive there in ManualTestTeleOp, tune until both shooters score, then copy
+    // the Position X/Y, both target velocities and both hood angles from telemetry into a new line.
+    private static final ShotPoint[] OTHER_POINTS = {
     };
 
     public static final class ShotPoint {
         public final String name;
-        public final FieldMap.Point position;   // blue, LEFT side quadrant (inches)
-        public final double pollenVelocity, nectarVelocity;   // ticks/s
-        public final double pollenHoodAngle, nectarHoodAngle; // degrees
+        public final double x, y;                              // blue, LEFT side quadrant (inches)
+        public final double pollenVelocity, nectarVelocity;    // ticks/s
+        public final double pollenHoodAngle, nectarHoodAngle;  // degrees
 
         public ShotPoint(String name, double x, double y, double pollenVelocity, double nectarVelocity,
                          double pollenHoodAngle, double nectarHoodAngle) {
             this.name = name;
-            this.position = new FieldMap.Point(x, y);
+            this.x = x;
+            this.y = y;
             this.pollenVelocity = pollenVelocity;
             this.nectarVelocity = nectarVelocity;
             this.pollenHoodAngle = pollenHoodAngle;
             this.nectarHoodAngle = nectarHoodAngle;
         }
+
+        public FieldMap.Point position() {
+            return new FieldMap.Point(x, y);
+        }
+    }
+
+    // Built from the dashboard values every call, so edits apply immediately
+    public static ShotPoint preset() {
+        return new ShotPoint("Preset", presetX, presetY, presetPollenVelocity, presetNectarVelocity,
+                presetPollenHoodAngle, presetNectarHoodAngle);
     }
 
     // The shot point closest to where the robot is
     public static ShotPoint closest(FieldMap.Point robotPosition, boolean isRed) {
         FieldMap.Point p = toTableQuadrant(robotPosition, isRed);
-        ShotPoint best = POINTS[0];
-        for (ShotPoint shot : POINTS) {
-            if (shot.position.distanceTo(p) < best.position.distanceTo(p)) best = shot;
+        ShotPoint best = preset();
+        for (ShotPoint shot : OTHER_POINTS) {
+            if (shot.position().distanceTo(p) < best.position().distanceTo(p)) best = shot;
         }
         return best;
     }

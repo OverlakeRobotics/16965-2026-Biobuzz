@@ -18,11 +18,12 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 // Controls (gamepad 1):
 //   Sticks         drive
 //   LB / RB        drive to the LEFT / RIGHT preset (as the driver sees it, around the HIVE legs) and
-//                  face that CELL; any stick cancels. Afterwards the heading stays locked on the CELL
-//                  until you turn.
-//   Hold RT        shoot: blockers open while aimed at the CELL; the intake feeds except while a flywheel is low
+//                  face that CELL, then hold there; any stick cancels
+//   Hold RT        shoot: blockers open while aimed at the CELL and within AutoAimer.positionTolerance of a
+//                  ShotTable spot; the intake feeds except while a flywheel is low
 //   B              toggle intake + transfer
 //   Hold A         reverse intake + transfer
+//   X              toggle the flower mechanism open/closed (starts open)
 // The flywheels always spin at the closest ShotTable point's speeds.
 @Config
 public abstract class BaseTeleOp extends OpMode {
@@ -31,8 +32,9 @@ public abstract class BaseTeleOp extends OpMode {
     public static double routeTolerance = 4;     // inches; how close to a waypoint before moving to the next
     public static double positionP = 3;
     public static double stickDeadband = 0.05;
-    // Field-centric "forward" for BLUE (degrees); red is this + 180. TODO: check on the field.
-    public static double blueFieldCentricOffset = 90;
+    // Field-centric "forward" for BLUE (degrees): stick up drives toward -Y and stick right toward -X.
+    // Red is this + 180 (stick up toward +Y, stick right toward +X).
+    public static double blueFieldCentricOffset = -90;
     // Used when TeleOp is started without running Auto first: field center, facing your own HIVE half
     // (blue faces blue; red is rotated, so it faces red)
     public static double defaultStartX = 0;
@@ -43,8 +45,7 @@ public abstract class BaseTeleOp extends OpMode {
     protected OdometryHolonomicDrivetrain driveTrain;
     protected AutoAimer autoAimer;
 
-    protected boolean routing = false;       // following a preset route
-    protected boolean aimLock = false;       // holding the heading on the CELL
+    protected boolean routing = false;       // driving to, or holding at, a preset
     protected boolean intakeOn = false;
     protected boolean shooting = false;
 
@@ -83,8 +84,8 @@ public abstract class BaseTeleOp extends OpMode {
         addTelemetry();
     }
 
-    // LB/RB start a route to that side's preset; sticks cancel it. When the route finishes, lock the
-    // heading on the CELL.
+    // LB/RB start a route to that side's preset. After arriving the robot keeps holding the preset spot
+    // and heading (pushing back if bumped) until any stick moves.
     protected void handleAiming() {
         if (gamepad1.leftBumperWasPressed()) {
             routeToPreset(FieldMap.LEFT);
@@ -92,13 +93,8 @@ public abstract class BaseTeleOp extends OpMode {
             routeToPreset(FieldMap.RIGHT);
         }
 
-        if (routing && (sticksMoved() || !driveTrain.isDriving())) {
+        if (routing && sticksMoved()) {
             routing = false;
-            aimLock = true;
-        }
-
-        if (aimLock && Math.abs(gamepad1.right_stick_x) > stickDeadband) {
-            aimLock = false;
         }
     }
 
@@ -107,7 +103,6 @@ public abstract class BaseTeleOp extends OpMode {
         driveTrain.setTolerance(routeTolerance);
         driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), autoAimer.getPresetPose(side)));
         routing = true;
-        aimLock = false;
     }
 
     protected void handleDrive() {
@@ -116,11 +111,6 @@ public abstract class BaseTeleOp extends OpMode {
         double forward = -gamepad1.left_stick_y * driveVelocity;
         double strafe = -gamepad1.left_stick_x * driveVelocity;
         double turn = -gamepad1.right_stick_x * driveVelocity;
-
-        if (aimLock) {
-            driveTrain.setWantedHeading(autoAimer.getAimHeading());
-            turn = driveTrain.getHeadingCorrectionVelocity();
-        }
 
         if (isFieldCentric()) {
             double offset = blueFieldCentricOffset + (isRedAlliance() ? 180 : 0);
@@ -134,6 +124,9 @@ public abstract class BaseTeleOp extends OpMode {
         if (gamepad1.bWasPressed()) {
             intakeOn = !intakeOn;
         }
+        if (gamepad1.xWasPressed()) {
+            robot.flower.toggle();
+        }
     }
 
     // Flywheels and hoods are always set to the closest ShotTable point. Holding RT shoots whenever ready;
@@ -141,15 +134,16 @@ public abstract class BaseTeleOp extends OpMode {
     protected void handleShooting() {
         autoAimer.aimShooters();
 
-        shooting = gamepad1.right_trigger > 0.5;
+        shooting = gamepad1.right_trigger > 0.3;
         if (shooting) {
-            // Blockers stay open while aimed; the intake pauses whenever a flywheel is low
-            if (autoAimer.isHeadingOnTarget()) {
+            // Blockers stay open while aimed and near a shot spot; the intake pauses whenever a flywheel is low
+            boolean inPosition = autoAimer.isHeadingOnTarget() && autoAimer.isAtShotPoint();
+            if (inPosition) {
                 robot.openBlockers();
             } else {
                 robot.closeBlockers();
             }
-            if (autoAimer.isHeadingOnTarget() && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
+            if (inPosition && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
                 robot.intake.in();
             } else {
                 robot.intake.stop();
@@ -168,17 +162,19 @@ public abstract class BaseTeleOp extends OpMode {
 
     protected void addTelemetry() {
         Pose2D pose = driveTrain.getPosition();
+        telemetry.addData("Runtime (s)", "%.1f", getRuntime());   // keeps counting while telemetry is live
         telemetry.addData("Position", "X: %.1f, Y: %.1f, H: %.1f",
                 pose.getX(DistanceUnit.INCH), pose.getY(DistanceUnit.INCH), pose.getHeading(AngleUnit.DEGREES));
         telemetry.addData("Drive", isFieldCentric() ? "FIELD-CENTRIC" : "ROBOT-CENTRIC");
-        telemetry.addData("Aim", routing ? "ROUTING" : aimLock ? "LOCKED" : "MANUAL");
+        telemetry.addData("Aim", !routing ? "MANUAL" : driveTrain.isDriving() ? "ROUTING" : "HOLDING");
         telemetry.addData("Target side", autoAimer.getActiveSide().name);
         telemetry.addData("Heading error", autoAimer.getHeadingError());
-        telemetry.addData("Shot point", autoAimer.getShot().name);
+        telemetry.addData("Shot point", "%s, %.1f in away", autoAimer.getShot().name, autoAimer.getShotDistance());
         telemetry.addData("Ready to shoot", autoAimer.readyToShoot());
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");
         telemetry.addData("Intake", gamepad1.a ? "REVERSE" : intakeOn ? "IN" : "OFF");
+        telemetry.addData("Flower", robot.flower.isOpen() ? "OPEN" : "CLOSED");
         telemetry.update();
     }
 

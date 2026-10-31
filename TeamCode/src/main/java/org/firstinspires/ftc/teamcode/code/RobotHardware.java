@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.code.parts.Flower;
 import org.firstinspires.ftc.teamcode.code.parts.Intake;
 import org.firstinspires.ftc.teamcode.code.parts.Shooter;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
@@ -25,6 +26,7 @@ public class RobotHardware {
     public final Shooter pollen;
     public final Shooter nectar;
     public final Intake intake;
+    public final Flower flower;
 
     private final HardwareMap hardwareMap;
 
@@ -50,6 +52,8 @@ public class RobotHardware {
                 hardwareMap.get(DcMotorEx.class, "intake"),
                 hardwareMap.get(DcMotorEx.class, "transfer")
         );
+
+        flower = new Flower(hardwareMap.get(Servo.class, "flower"));
     }
 
     // Odometry drivetrain for TeleOp. Pinpoint offsets come from pedro/Constants via

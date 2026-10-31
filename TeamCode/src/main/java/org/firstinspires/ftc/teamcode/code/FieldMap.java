@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.code;
 
+import com.acmerobotics.dashboard.config.Config;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -17,17 +19,18 @@ import java.util.List;
 //
 // Targets are written for BLUE only. The field is 180-degree rotationally symmetric, so red values
 // come from forAlliance(): (x, y, h) -> (-x, -y, h + 180).
+@Config
 public class FieldMap {
     public static final double FIELD_SIZE = 144;
     public static final double HALF_FIELD = FIELD_SIZE / 2;
 
     // Robot footprint (CAD)
-    public static final double ROBOT_LENGTH = 15.118;
-    public static final double ROBOT_WIDTH = 16.378;
+    public static final double ROBOT_LENGTH = 18.0;
+    public static final double ROBOT_WIDTH = 18.0;
     // Distance from robot center to a corner: the robot's center must stay this far from an obstacle
     // so no part of it can hit, whatever its heading
     public static final double ROBOT_RADIUS = Math.hypot(ROBOT_LENGTH, ROBOT_WIDTH) / 2;
-    public static final double OBSTACLE_MARGIN = 2;
+    public static final double OBSTACLE_MARGIN = 3;
     // Extra "distance" (inches) charged per detour waypoint when picking a route, so that between two
     // similar-length routes the one with fewer turns wins
     public static final double WAYPOINT_PENALTY = 6;
@@ -47,9 +50,12 @@ public class FieldMap {
 
     // The two CELLS of the blue HIVE. When the HIVE tips, the scoring CELL switches sides.
     // LEFT/RIGHT are as the driver sees them, standing on their own alliance's side looking at the HIVE.
-    // Aim points are estimated from the top-down field image (+/- ~1 in). Preset spots are in ShotTable.
-    public static final TargetSide LEFT = new TargetSide("LEFT", new Point(13.5, 13));     // the +X CELL
-    public static final TargetSide RIGHT = new TargetSide("RIGHT", new Point(-13.5, 13));  // the -X CELL
+    // Aim point of the blue LEFT CELL (+X, +Y), tunable in the dashboard; the RIGHT CELL is the same point
+    // mirrored across x = 0. Estimated from the top-down field image (+/- ~1 in). Preset spots are in ShotTable.
+    public static double cellAimX = 13.5;
+    public static double cellAimY = 13;
+    public static final TargetSide LEFT = new TargetSide("LEFT", 1);     // the +X CELL
+    public static final TargetSide RIGHT = new TargetSide("RIGHT", -1);  // the -X CELL
 
     public static final class Point {
         public final double x, y;
@@ -67,11 +73,15 @@ public class FieldMap {
     // One CELL to shoot at (blue side)
     public static final class TargetSide {
         public final String name;
-        public final Point aimPoint;
+        private final int xSign;   // +1 for the +X CELL, -1 for the -X CELL
 
-        public TargetSide(String name, Point aimPoint) {
+        public TargetSide(String name, int xSign) {
             this.name = name;
-            this.aimPoint = aimPoint;
+            this.xSign = xSign;
+        }
+
+        public Point aimPoint() {
+            return new Point(xSign * cellAimX, cellAimY);
         }
     }
 
