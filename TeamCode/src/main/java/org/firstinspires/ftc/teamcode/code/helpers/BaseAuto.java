@@ -42,14 +42,16 @@ import java.util.List;
 //   autoAim                    face the CELL and keep both shooters aimed on this segment
 //   pollenVelocity, nectarVelocity   set that flywheel's velocity (ticks/s)
 //   pollenHood, nectarHood           set that hood's servo position (0 to 1)
-//   launchArtifacts            stop at the node and shoot for <value> seconds
-//   startLaunch / endLaunch    shoot while moving between the two tags
+//   shoot                      stop at the node, turn to the CELL and shoot for <value> seconds
+//   startShoot / endShoot      shoot while moving between the two tags
+// Shooting uses the same rules as TeleOp: blockers open while aimed at the CELL, and the intake
+// feeds except while a flywheel is below speed.
 @Config
 public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandler {
     // Where the robot was when Auto ended, so TeleOp starts from there instead of a guessed pose
     public static Pose2D lastPose = null;
 
-    public static double launchHeadingRetargetDeg = 0.5;
+    public static double shootHeadingRetargetDeg = 0.5;
 
     protected Reader jsonReader;
     protected boolean readJson;
@@ -122,7 +124,7 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
         PedroPathBuilder.Options options = new PedroPathBuilder.Options();
         options.policy = (segmentIndex, segment, tags) -> {
             if (PedroPathBuilder.hasTag(tags, "pause")) return true;
-            for (PathServer.Tag t : tags) if ("launchArtifacts".equals(t.name) && t.value > 0) return true;
+            for (PathServer.Tag t : tags) if ("shoot".equals(t.name) && t.value > 0) return true;
             return false;
         };
         // Segments tagged autoAim keep the shooters (left side) pointed at the CELL
@@ -132,7 +134,7 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
         chunks = PedroPathBuilder.build(route, options);
         routeCommand = PathPlanRunner.build(follower, chunks, this);
 
-        // Runs for the whole auto and shoots whenever startLaunch turned shooting on.
+        // Runs for the whole auto and shoots whenever startShoot turned shooting on.
         shootOnMoveService = Command.build()
                 .setExecute(() -> { if (isShooting) shootLoop(0); })
                 .setDone(() -> false);
@@ -173,11 +175,17 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
         return (curve, t) -> Math.toRadians(autoAimer.getAimHeading());
     }
 
-    // One loop of shooting: aim, and feed when both shooters are ready and the delay has passed.
+    // One loop of shooting, same rules as TeleOp: spin up to the closest shot point, open the blockers
+    // while aimed, and feed (after the delay) except while a flywheel is below speed.
     private void shootLoop(double delayLeft) {
-        robot.openBlockers();
         autoAimer.aimShooters();
-        if (delayLeft <= 0 && autoAimer.readyToShoot()) {
+        boolean aimed = autoAimer.isHeadingOnTarget();
+        if (aimed) {
+            robot.openBlockers();
+        } else {
+            robot.closeBlockers();
+        }
+        if (aimed && delayLeft <= 0 && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
             robot.intake.in();
         } else {
             robot.intake.stop();
@@ -223,17 +231,14 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
             case "nectarHood":
                 return Commands.instant(() -> robot.nectar.setHoodPosition(tag.value));
 
-            case "launchArtifacts":
+            case "shoot":
                 if (tag.value <= 0) return null;
-                return launchArtifacts(tag.value, ctx);
+                return shoot(tag.value, ctx);
 
-            case "startLaunch":
-                return Commands.instant(() -> {
-                    robot.openBlockers();
-                    isShooting = true;
-                });
+            case "startShoot":
+                return Commands.instant(() -> isShooting = true);
 
-            case "endLaunch":
+            case "endShoot":
                 return Commands.instant(() -> {
                     isShooting = false;
                     robot.closeBlockers();
@@ -247,13 +252,12 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
 
     // Stopped shooting sequence: hold the node turned toward the CELL, spin up, feed once ready, and
     // close again after <seconds>.
-    private Command launchArtifacts(double seconds, PathPlanRunner.TagContext ctx) {
+    private Command shoot(double seconds, PathPlanRunner.TagContext ctx) {
         final ElapsedTime timer = new ElapsedTime();
         final Pose[] holdPose = new Pose[1];
         return Command.build()
                 .setStart(() -> {
                     timer.reset();
-                    robot.openBlockers();
                     holdPose[0] = ctx != null ? ctx.chunk.startPose : follower.pose();
                 })
                 .setExecute(() -> {
@@ -261,7 +265,7 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
                     // The shooters are fixed to the robot, so the whole robot turns to aim
                     double wantedDeg = autoAimer.getAimHeading();
                     double currentDeg = Math.toDegrees(holdPose[0].heading());
-                    if (Math.abs(normalize(wantedDeg - currentDeg)) > launchHeadingRetargetDeg) {
+                    if (Math.abs(normalize(wantedDeg - currentDeg)) > shootHeadingRetargetDeg) {
                         holdPose[0] = holdPose[0].withHeading(Math.toRadians(wantedDeg));
                         follower.hold(holdPose[0]);
                     }
