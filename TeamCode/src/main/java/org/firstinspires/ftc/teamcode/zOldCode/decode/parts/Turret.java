@@ -3,12 +3,14 @@ package org.firstinspires.ftc.teamcode.zOldCode.decode.parts;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 @Config
+@Disabled
 public class Turret extends Shooter {
     public final double TICKS_PER_DEGREE = 537.7 / 360;
     public static int MAX_LIMIT_ANGLE = 155; // 115; // degrees

@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.zOldCode.decode.parts;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 
 @Config
+@Disabled
 public class Potentiometer {
     public static double DEGREES_PER_VOLT = 3600 / 3.33;
     public static double POTENTIOMETER_VOLTAGE_AT_TURRET_ZERO = 1.202;

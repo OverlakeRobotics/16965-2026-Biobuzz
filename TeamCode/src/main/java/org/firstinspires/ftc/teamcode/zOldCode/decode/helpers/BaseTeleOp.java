@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.zOldCode.decode.helpers;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -28,6 +29,7 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 import org.firstinspires.ftc.teamcode.system.PathServer;
 
 @Config
+@Disabled
 public abstract class BaseTeleOp extends OpMode {
     protected Limelight3A limelight;
     public static final ElapsedTime runtime = new ElapsedTime();

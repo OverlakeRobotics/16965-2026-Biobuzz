@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.zOldCode.decode.helpers;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.pedropathing.api.Paths;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ivy.Command;
@@ -59,6 +60,7 @@ import java.util.stream.Stream;
 //   shootWhileMove         enable (1) / disable (0) the moving-shot compensation
 //   autoArtifactPickup     drive this segment with the HuskyLens steering onto artifacts
 @Config
+@Disabled
 public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandler {
     protected Reader jsonReader;
     protected boolean readJson;

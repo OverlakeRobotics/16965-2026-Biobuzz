@@ -113,6 +113,7 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 
 - Prove telemetry is live before deciding a change "didn't work". A stopped OpMode leaves the last telemetry on screen; keep a counter like `Runtime (s)` visible.
 - Prefer plain `public static` primitive fields for dashboard tuning. Nested config objects have been unreliable for us; don't rely on them for values you need to tune live.
+- FTC Dashboard lists `@Config` classes by simple class name, so two classes with the same name (e.g. `code/parts/Shooter` and an old `Shooter`) collide and only one shows up. Edits then go to the wrong class. Keep `@Config` class names unique, or mark old ones `@Disabled` (the dashboard skips those).
 - Know which values are live and which are only sent at init (motor PIDF/position P, start poses). Either re-send on change or say in a comment that a restart is needed.
 - Telemetry should show the same condition the code acts on. A "ready" readout that uses a different rule than the actual shooting logic is misleading.
 - Check the basics before tuning on top of them: confirm the flywheels actually reach their target speed before tuning shot values.

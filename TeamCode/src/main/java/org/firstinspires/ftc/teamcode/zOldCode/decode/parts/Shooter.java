@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.zOldCode.decode.parts;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 @Config
+@Disabled
 public class Shooter {
     public final double MAX_VELOCITY = 2800;
     public final double MOTOR_TO_WHEEL_VELOCITY_RATIO = 1.0;

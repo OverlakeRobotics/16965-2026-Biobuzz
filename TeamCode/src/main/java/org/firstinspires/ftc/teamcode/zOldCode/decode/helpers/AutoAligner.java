@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.zOldCode.decode.helpers;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -22,6 +23,7 @@ import java.util.List;
 
 
 @Config
+@Disabled
 public class AutoAligner {
     public static final double g = 386.08858; // in/s^2
     public static final double rhinoWheelRadius = 1.88976; // in

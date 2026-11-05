@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.zOldCode.decode.parts;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.Color;
 import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.GoBildaPrismDriver;
@@ -10,6 +11,7 @@ import org.firstinspires.ftc.teamcode.zOldCode.decode.helpers.Prism.PrismAnimati
 import org.firstinspires.ftc.teamcode.zOldCode.decode.parts.Intake.IntakeState;
 
 @Config
+@Disabled
 public class LEDIndicator {
     private final GoBildaPrismDriver prism;
     private IntakeState currentState;
