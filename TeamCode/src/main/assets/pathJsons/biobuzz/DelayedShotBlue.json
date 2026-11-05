@@ -1,0 +1,112 @@
+{
+  "version": 2,
+  "createdAt": "2026-10-31T23:55:00.000Z",
+  "alliance": "blue",
+  "start": {
+    "x": 63,
+    "y": 40,
+    "h": 90
+  },
+  "points": [
+    {
+      "x": 50,
+      "y": 40,
+      "h": 90
+    },
+    {
+      "x": 50,
+      "y": 13,
+      "h": 90.71
+    },
+    {
+      "x": 36,
+      "y": 60,
+      "h": 90
+    }
+  ],
+  "segments": [
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": 50,
+        "y": 40,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 50,
+          "y": 40,
+          "h": 90
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": 50,
+        "y": 13,
+        "h": 90.71
+      },
+      "samples": [
+        {
+          "x": 50,
+          "y": 13,
+          "h": 90.71
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "headingMode": "straight",
+      "end": {
+        "x": 36,
+        "y": 60,
+        "h": 90
+      },
+      "samples": [
+        {
+          "x": 36,
+          "y": 60,
+          "h": 90
+        }
+      ]
+    }
+  ],
+  "headingMode": "straight",
+  "endHeading": 90,
+  "snapInches": 3,
+  "robot": {
+    "length": 18,
+    "width": 18
+  },
+  "tags": [
+    {
+      "index": 0,
+      "segment": -1,
+      "name": "pause",
+      "value": 17
+    },
+    {
+      "index": 0,
+      "segment": -1,
+      "name": "autoAim",
+      "value": 0
+    },
+    {
+      "index": 2,
+      "segment": 1,
+      "name": "pause",
+      "value": 2
+    },
+    {
+      "index": 2,
+      "segment": 1,
+      "name": "shoot",
+      "value": 4
+    }
+  ],
+  "globals": [],
+  "tagBindings": []
+}

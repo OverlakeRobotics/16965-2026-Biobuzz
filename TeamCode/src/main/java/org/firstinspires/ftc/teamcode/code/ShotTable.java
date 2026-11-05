@@ -14,7 +14,7 @@ public class ShotTable {
     // Also a shot point. Tunable live in the dashboard (ShotTable). TODO: measure and tune.
      public static double presetX = 50;
     public static double presetY = 13;
-    public static double presetPollenVelocity = 1500;   // ticks/s
+    public static double presetPollenVelocity = 1450;   // ticks/s
     public static double presetNectarVelocity = 1900;
     public static double presetPollenHoodAngle = 16.2;  // degrees
     public static double presetNectarHoodAngle = 17.04;
