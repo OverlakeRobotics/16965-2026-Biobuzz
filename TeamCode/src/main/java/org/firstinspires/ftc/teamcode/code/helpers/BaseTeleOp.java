@@ -19,6 +19,8 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //   Sticks         drive
 //   LB / RB        drive to the LEFT / RIGHT preset (as the driver sees it, around the HIVE legs) and
 //                  face that CELL, then hold there; any stick cancels
+//   Guide (center) drive back to the TeleOp start pose around the HIVE legs, then hold there, so the
+//                  OpMode can be stopped and re-inited from the same spot; any stick cancels
 //   D-pad up/down  pollen target speed +/- velocityStep (hold LT: nectar instead), on top of the ShotTable
 //   Hold RT        shoot: blockers open while aimed at the CELL and within AutoAimer.positionTolerance of a
 //                  ShotTable spot; the intake feeds except while a flywheel is low
@@ -37,8 +39,8 @@ public abstract class BaseTeleOp extends OpMode {
     // Field-centric "forward" for BLUE (degrees): stick up drives toward -Y and stick right toward -X.
     // Red is this + 180 (stick up toward +Y, stick right toward +X).
     public static double blueFieldCentricOffset = -90;
-    // Used when TeleOp is started without running Auto first: field center, facing your own HIVE half
-    // (blue faces blue; red is rotated, so it faces red)
+    // Used when TeleOp is started without running Auto first, and where the guide button drives back to:
+    // field center, facing your own HIVE half (blue faces blue; red is rotated, so it faces red)
     public static double defaultStartX = 0;
     public static double defaultStartY = 0;
     public static double defaultStartHeading = 90;
@@ -47,7 +49,7 @@ public abstract class BaseTeleOp extends OpMode {
     protected OdometryHolonomicDrivetrain driveTrain;
     protected AutoAimer autoAimer;
 
-    protected boolean routing = false;       // driving to, or holding at, a preset
+    protected boolean routing = false;       // driving to, or holding at, a preset or the start pose
     protected boolean intakeOn = false;
     protected boolean shooting = false;
     // D-pad changes to the ShotTable velocities (ticks/s), kept for the rest of this TeleOp run
@@ -69,11 +71,7 @@ public abstract class BaseTeleOp extends OpMode {
 
     @Override
     public void start() {
-        Pose2D startPose = BaseAuto.lastPose != null
-                ? BaseAuto.lastPose
-                : FieldMap.forAlliance(new Pose2D(DistanceUnit.INCH, defaultStartX, defaultStartY,
-                        AngleUnit.DEGREES, defaultStartHeading), isRedAlliance());
-        driveTrain.setPosition(startPose);
+        driveTrain.setPosition(BaseAuto.lastPose != null ? BaseAuto.lastPose : getDefaultStartPose());
         // Use the Auto pose once; a second TeleOp run without Auto should fall back to the default
         BaseAuto.lastPose = null;
     }
@@ -90,13 +88,15 @@ public abstract class BaseTeleOp extends OpMode {
         addTelemetry();
     }
 
-    // LB/RB start a route to that side's preset. After arriving the robot keeps holding the preset spot
-    // and heading (pushing back if bumped) until any stick moves.
+    // LB/RB start a route to that side's preset, guide a route back to the start pose. After arriving the
+    // robot keeps holding that spot and heading (pushing back if bumped) until any stick moves.
     protected void handleAiming() {
         if (gamepad1.leftBumperWasPressed()) {
-            routeToPreset(FieldMap.LEFT);
+            routeTo(autoAimer.getPresetPose(FieldMap.LEFT));
         } else if (gamepad1.rightBumperWasPressed()) {
-            routeToPreset(FieldMap.RIGHT);
+            routeTo(autoAimer.getPresetPose(FieldMap.RIGHT));
+        } else if (gamepad1.guideWasPressed()) {
+            routeTo(getDefaultStartPose());
         }
 
         if (routing && sticksMoved()) {
@@ -104,11 +104,16 @@ public abstract class BaseTeleOp extends OpMode {
         }
     }
 
-    private void routeToPreset(FieldMap.TargetSide side) {
+    private void routeTo(Pose2D target) {
         driveTrain.setVelocity((int) routeVelocity);
         driveTrain.setTolerance(routeTolerance);
-        driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), autoAimer.getPresetPose(side)));
+        driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), target));
         routing = true;
+    }
+
+    private Pose2D getDefaultStartPose() {
+        return FieldMap.forAlliance(new Pose2D(DistanceUnit.INCH, defaultStartX, defaultStartY,
+                AngleUnit.DEGREES, defaultStartHeading), isRedAlliance());
     }
 
     protected void handleDrive() {

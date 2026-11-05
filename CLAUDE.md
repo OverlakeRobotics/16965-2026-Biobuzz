@@ -89,6 +89,7 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 |---|---|
 | Sticks | Drive (field- or robot-centric by OpMode). Field-centric forward: blue → −Y (right → −X), red → +Y (`blueFieldCentricOffset = -90`, red + 180). |
 | LB / RB | Drive to the LEFT / RIGHT preset around the HIVE bars, arrive facing the CELL, then HOLD that pose (pushes back if bumped) until any stick moves. |
+| Guide (center "mode"/logo button) | Drive back to the TeleOp default start pose ((0, 0), blue 90°, red −90°) around the HIVE bars, then HOLD it until any stick moves. For stopping and re-initing from the same spot during testing. |
 | D-pad up / down | Pollen target speed +/- `velocityStep` (50 ticks/s). Hold LT (> 0.3): nectar instead. Offsets add to the ShotTable speeds at every point and last for the TeleOp run. |
 | Hold RT (> 0.3) | Shoot. Blockers open while heading is within `headingTolerance` (3°) AND within `positionTolerance` (6 in) of a shot point. Intake feeds while in position, pauses whenever either flywheel is BELOW speed (over speed is fine). A/B ignored while shooting. |
 | B | Toggle intake + transfer |
