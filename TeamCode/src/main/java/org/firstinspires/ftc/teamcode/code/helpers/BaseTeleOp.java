@@ -23,10 +23,11 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //                  OpMode can be stopped and re-inited from the same spot; any stick cancels
 //   D-pad up/down  pollen target speed +/- velocityStep (hold LT: nectar instead), on top of the ShotTable
 //   Hold RT        shoot: blockers open while aimed at the CELL and within AutoAimer.positionTolerance of a
-//                  ShotTable spot; the intake feeds except while a flywheel is low
+//                  ShotTable spot; once they are open the intake feeds except while a flywheel is low
 //   B              toggle intake + transfer
 //   Hold A         reverse intake + transfer
 //   X              toggle the flower mechanism open/closed (starts open)
+//   Hold Y         clear: blockers open and reverse; on release, blockers close and intake on. Beats RT, A and B.
 // The flywheels always spin at the closest ShotTable point's speeds, plus the D-pad offsets.
 @Config
 public abstract class BaseTeleOp extends OpMode {
@@ -52,6 +53,7 @@ public abstract class BaseTeleOp extends OpMode {
     protected boolean routing = false;       // driving to, or holding at, a preset or the start pose
     protected boolean intakeOn = false;
     protected boolean shooting = false;
+    protected boolean clearing = false;      // Y held
     // D-pad changes to the ShotTable velocities (ticks/s), kept for the rest of this TeleOp run
     protected double pollenOffset = 0;
     protected double nectarOffset = 0;
@@ -158,16 +160,30 @@ public abstract class BaseTeleOp extends OpMode {
     protected void handleShooting() {
         autoAimer.aimShooters(pollenOffset, nectarOffset);
 
+        // Holding Y beats everything below
+        if (gamepad1.y) {
+            clearing = true;
+            robot.openBlockers();
+            robot.intake.reverse();
+            return;
+        }
+        if (clearing) {
+            clearing = false;
+            robot.closeBlockers();
+            intakeOn = true;
+        }
+
         shooting = gamepad1.right_trigger > 0.3;
         if (shooting) {
-            // Blockers stay open while aimed and near a shot spot; the intake pauses whenever a flywheel is low
+            // Blockers stay open while aimed and near a shot spot; the intake waits for them to finish
+            // opening and pauses whenever a flywheel is low
             boolean inPosition = autoAimer.isHeadingOnTarget() && autoAimer.isAtShotPoint();
             if (inPosition) {
                 robot.openBlockers();
             } else {
                 robot.closeBlockers();
             }
-            if (inPosition && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
+            if (robot.blockersOpen() && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
                 robot.intake.in();
             } else {
                 robot.intake.stop();
@@ -198,7 +214,7 @@ public abstract class BaseTeleOp extends OpMode {
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");
         telemetry.addData("Speed offset", "Pollen %+.0f, Nectar %+.0f", pollenOffset, nectarOffset);
-        telemetry.addData("Intake", gamepad1.a ? "REVERSE" : intakeOn ? "IN" : "OFF");
+        telemetry.addData("Intake", clearing ? "CLEARING" : gamepad1.a ? "REVERSE" : intakeOn ? "IN" : "OFF");
         telemetry.addData("Flower", robot.flower.isOpen() ? "OPEN" : "CLOSED");
         telemetry.update();
     }

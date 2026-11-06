@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 // Flower mechanism servo (picks up from the flower). Starts open (up).
 @Config
 public class Flower {
-    public static double openPos = 0.47;
+    public static double openPos = 0.43;
     public static double closedPos = 0;
 
     private final Servo servo;

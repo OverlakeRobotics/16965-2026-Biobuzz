@@ -44,8 +44,8 @@ import java.util.List;
 //   pollenHood, nectarHood           set that hood's servo position (0 to 1)
 //   shoot                      stop at the node, turn to the CELL and shoot for <value> seconds
 //   startShoot / endShoot      shoot while moving between the two tags
-// Shooting uses the same rules as TeleOp: blockers open while aimed at the CELL, and the intake
-// feeds except while a flywheel is below speed.
+// Shooting uses the same rules as TeleOp: blockers open while aimed at the CELL, and once they are
+// open the intake feeds except while a flywheel is below speed.
 @Config
 public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandler {
     // Where the robot was when Auto ended, so TeleOp starts from there instead of a guessed pose
@@ -176,16 +176,15 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
     }
 
     // One loop of shooting, same rules as TeleOp: spin up to the closest shot point, open the blockers
-    // while aimed, and feed (after the delay) except while a flywheel is below speed.
+    // while aimed, and once they are open feed (after the delay) except while a flywheel is below speed.
     private void shootLoop(double delayLeft) {
         autoAimer.aimShooters();
-        boolean aimed = autoAimer.isHeadingOnTarget();
-        if (aimed) {
+        if (autoAimer.isHeadingOnTarget()) {
             robot.openBlockers();
         } else {
             robot.closeBlockers();
         }
-        if (aimed && delayLeft <= 0 && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
+        if (robot.blockersOpen() && delayLeft <= 0 && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
             robot.intake.in();
         } else {
             robot.intake.stop();

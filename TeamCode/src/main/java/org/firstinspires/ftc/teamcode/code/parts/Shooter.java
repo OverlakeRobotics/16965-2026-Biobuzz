@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -18,6 +19,8 @@ public class Shooter {
     public static double atSpeedTolerance = 100;
     public static double blockerOpenPos = 0.16;
     public static double blockerClosedPos = 0.0;
+    // How long after the open command the blocker counts as open, so balls aren't fed into it mid-swing
+    public static double blockerOpenSeconds = 0.3;
     // Degrees the hood servo turns from position 0 to 1. TODO: confirm for the servo model used.
     public static double HOOD_SERVO_RANGE_DEGREES = 300;
     // The servo's 32T gear drives the hood's 24T gear, so the hood turns 32/24 = 4/3 degrees per servo degree
@@ -31,9 +34,11 @@ public class Shooter {
     private final PIDFCoefficients appliedPidf = new PIDFCoefficients();
     // Hood angle (degrees) when the hood servo is at position 0
     private final double hoodZeroAngle;
+    private final ElapsedTime blockerTimer = new ElapsedTime();   // since the blocker was last told to open
 
     private double targetVelocity = 0;
     private double hoodPosition = 0;
+    private boolean blockerOpening = false;
 
     public Shooter(DcMotorEx flywheel, Servo hood, Servo blocker, PIDFCoefficients pidf, double hoodZeroAngle) {
         this.flywheel = flywheel;
@@ -112,11 +117,21 @@ public class Shooter {
     }
 
     public void open() {
+        if (!blockerOpening) {
+            blockerOpening = true;
+            blockerTimer.reset();
+        }
         blocker.setPosition(blockerOpenPos);
     }
 
     public void close() {
+        blockerOpening = false;
         blocker.setPosition(blockerClosedPos);
+    }
+
+    // True once the blocker has been open for blockerOpenSeconds
+    public boolean isBlockerOpen() {
+        return blockerOpening && blockerTimer.seconds() >= blockerOpenSeconds;
     }
 
     // Numbers are added as plain values (not formatted strings) so FTC Dashboard can graph them.

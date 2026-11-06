@@ -17,7 +17,7 @@ All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Save
 - `RobotHardware`: the ONLY place that touches `hardwareMap`. Builds the two shooters (`pollen` = flywheelP/hoodP/blockerP, `nectar` = flywheelN/hoodN/blockerN), the `intake` (intake + transfer motors), the `flower` servo, and (via `createDrivetrain()`) the TeleOp odometry drivetrain with the Pinpoint. Flywheel PIDF (`pollenPIDF`, `nectarPIDF`) is tunable in FTC Dashboard.
 - `FieldMap`: field and robot dimensions, the two HIVE base bars (the only obstacles), the CELL aim point (`cellAimX/Y`, dashboard-tunable), `TargetSide` LEFT/RIGHT, `forAlliance()` (blue → red, 180° rotation), and `routeTo()` (Dijkstra route around the bars for the TeleOp presets).
 - `ShotTable`: known-good shooter settings (position, both flywheel velocities, both hood angles in degrees) for spots on the field. The preset is the plain dashboard fields `presetX/Y`, `presetPollenVelocity`, etc.; more fixed spots go in `OTHER_POINTS`. Written for ONE quadrant (blue, LEFT, +X +Y) and mirrored to the other three by `toTableQuadrant` / `fromTableQuadrant`.
-- `parts/`: mechanisms. `Shooter` (one flywheel + hood + blocker, velocity PIDF, at-speed / below-speed checks, hood angle ↔ servo conversion), `Intake` (intake + transfer, always together), `Flower` (one servo, open/closed).
+- `parts/`: mechanisms. `Shooter` (one flywheel + hood + blocker, velocity PIDF, at-speed / below-speed checks, blocker open wait, hood angle ↔ servo conversion), `Intake` (intake + transfer, always together), `Flower` (one servo, open/closed).
 - `helpers/`: shared logic. `AutoAimer` (active CELL, aim heading, preset pose, closest shot point, position/heading checks), `BaseTeleOp` (all competition TeleOp logic; subclasses only pick alliance and field/robot-centric), `BaseAuto` (follows a Path Planner route with Pedro Pathing and runs route tags; stores `lastPose` for TeleOp).
 - `opmodes/`: `ManualTestTeleOp` (temporary; for finding shot-table values by hand), `MotorTester`, `PathPlanner` (runs whatever route is uploaded live through `PathServer`).
 - `opmodes/TeleOps/`: `Red`/`Blue` × `Field`/`Robot`-centric TeleOps, each a tiny subclass of `BaseTeleOp`.
@@ -56,14 +56,14 @@ Top-down view, drawn with blue on the left (same as the team's field map):
                                 ▲
               ┌──────────────────────────────────┐
               │ blue LEFT preset   red RIGHT preset│
-              │   (48, 13)            (48, -13)    │
+              │   (53, 13)            (53, -13)    │
    BLUE       │         ┃ ●          ● ┃          │        RED
    driver ──► │         ┃              ┃          │ ◄── driver
    faces −Y   │    bar  ┃      ·       ┃  bar     │    faces +Y
               │         ┃   (0, 0)     ┃          │
               │         ┃ ●          ● ┃          │
               │ blue RIGHT preset  red LEFT preset │
-              │   (-48, 13)           (-48, -13)   │
+              │   (-53, 13)           (-53, -13)   │
               └──────────────────────────────────┘
       +Y ◄──  (blue HIVE half)      (red HIVE half)  ──► −Y
                                 ▼
@@ -75,7 +75,7 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 - The RED driver stands on the red (−Y) side looking toward +Y. Their left is −X, their right is +X.
 - Field-centric "stick up" = away from the driver: blue → −Y, red → +Y.
 - Robot heading: 90° faces +Y (toward blue), −90° faces −Y (toward red), 0° faces +X, 180° faces −X.
-- The shooters fire out the robot's LEFT side, so to shoot the robot faces 90° away from the CELL. At the blue LEFT preset (48, 13) it faces about 90.75° (+Y); its left side points at the −X direction, at the CELL (13.5, 13).
+- The shooters fire out the robot's LEFT side, so to shoot the robot faces 90° away from the CELL. At the blue LEFT preset (53, 13) it faces about 90.66° (+Y); its left side points at the −X direction, at the CELL (13.5, 13).
 - Pinpoint check: start the robot at (0, 0) facing red (−90°, the Manual Test start). Driving forward should make Y go down, strafing right should make X go down, turning left (CCW) should make H go up.
 - LEFT / RIGHT CELL are as the driver sees them, standing on their own alliance's side looking at the HIVE. Blue LEFT is the +X CELL; red LEFT is the −X CELL.
 - The active CELL is the one on the robot's half of the field (`AutoAimer.getActiveSide()`); you can't score into the other one from there.
@@ -91,10 +91,11 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 | LB / RB | Drive to the LEFT / RIGHT preset around the HIVE bars, arrive facing the CELL, then HOLD that pose (pushes back if bumped) until any stick moves. |
 | Guide (center "mode"/logo button) | Drive back to the TeleOp default start pose ((0, 0), blue 90°, red −90°) around the HIVE bars, then HOLD it until any stick moves. For stopping and re-initing from the same spot during testing. |
 | D-pad up / down | Pollen target speed +/- `velocityStep` (50 ticks/s). Hold LT (> 0.3): nectar instead. Offsets add to the ShotTable speeds at every point and last for the TeleOp run. |
-| Hold RT (> 0.3) | Shoot. Blockers open while heading is within `headingTolerance` (3°) AND within `positionTolerance` (6 in) of a shot point. Intake feeds while in position, pauses whenever either flywheel is BELOW speed (over speed is fine). A/B ignored while shooting. |
+| Hold RT (> 0.3) | Shoot. Blockers open while heading is within `headingTolerance` (3°) AND within `positionTolerance` (6 in) of a shot point. Intake feeds once the blockers have been open for `blockerOpenSeconds` (0.3 s), pauses whenever either flywheel is BELOW speed (over speed is fine). A/B ignored while shooting. |
 | B | Toggle intake + transfer |
 | Hold A | Reverse intake + transfer |
-| X | Toggle flower open (0.47) / closed (0). Starts open at init. |
+| X | Toggle flower open (0.43) / closed (0). Starts open at init. |
+| Hold Y | Clear: blockers open and intake + transfer reverse. On release, blockers close and intake turns on. Highest priority: overrides RT, A and B while held. |
 
 - Flywheels ALWAYS spin, at the closest shot point's velocities plus the D-pad offsets (recomputed every loop). No off switch.
 - No aim lock: after a preset the hold keeps the heading; once you drive, turning is manual.

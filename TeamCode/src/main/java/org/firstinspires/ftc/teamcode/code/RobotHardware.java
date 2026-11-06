@@ -86,6 +86,10 @@ public class RobotHardware {
         nectar.close();
     }
 
+    public boolean blockersOpen() {
+        return pollen.isBlockerOpen() && nectar.isBlockerOpen();
+    }
+
     public boolean shootersAtSpeed() {
         return pollen.isAtSpeed() && nectar.isAtSpeed();
     }
