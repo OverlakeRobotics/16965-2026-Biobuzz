@@ -34,6 +34,9 @@ public class FieldMap {
     // Extra "distance" (inches) charged per detour waypoint when picking a route, so that between two
     // similar-length routes the one with fewer turns wins
     public static final double WAYPOINT_PENALTY = 6;
+    // How far outside a keep-out zone the route's detour waypoints sit. At least BaseTeleOp.routeTolerance:
+    // the drivetrain heads for the next waypoint once it's that close to one, cutting the corner by that much.
+    public static final double WAYPOINT_CLEARANCE = 4;
 
     // HIVE Structure frame, centered on the field. Two triangular legs whose bases sit on the tiles:
     // the frame is 49.46 in "wide" (distance between the two legs) and 38.95 in "deep" (length of each leg's base).
@@ -41,17 +44,37 @@ public class FieldMap {
     public static final double HIVE_FRAME_DEPTH = 38.95;
     public static final double HIVE_PIVOT_HEIGHT = 43.95;
 
-    // The two leg bases are the only parts of the HIVE the robot can't drive through. Each is a thin
-    // bar along X at Y = +/- HIVE_FRAME_WIDTH / 2. They're symmetric, so the same for both alliances.
+    // FLOWERS: one on each perimeter wall, centered FLOWER_OFFSET along it (Figure 9-2: +X wall at y = +24,
+    // -X wall at y = -24, +Y wall at x = -24, -Y wall at x = +24). Size measured from Figures 9-2 and 9-12.
+    public static final double FLOWER_OFFSET = 24;
+    public static final double FLOWER_WIDTH = 7;   // along the wall
+    public static final double FLOWER_DEPTH = 5;   // out from the wall
+
+    // Everything the robot can hit. Each obstacle is 180-degree symmetric with another (or itself), so the
+    // list is the same for both alliances.
+    //   HIVE: the two leg bases, thin bars along X at Y = +/- HIVE_FRAME_WIDTH / 2. The legs rise straight
+    //         up from them, and the HIVES hang with their bottom 30.6 in above the tiles (Figure 9-10), so
+    //         the robot can drive under the rest.
+    //   The four FLOWERS, and the perimeter walls (1 in thick, just outside the field).
     public static final Rect[] OBSTACLES = {
             new Rect(-HIVE_FRAME_DEPTH / 2, HIVE_FRAME_WIDTH / 2 - 1, HIVE_FRAME_DEPTH / 2, HIVE_FRAME_WIDTH / 2 + 1),
             new Rect(-HIVE_FRAME_DEPTH / 2, -HIVE_FRAME_WIDTH / 2 - 1, HIVE_FRAME_DEPTH / 2, -HIVE_FRAME_WIDTH / 2 + 1),
+
+            new Rect(HALF_FIELD - FLOWER_DEPTH, FLOWER_OFFSET - FLOWER_WIDTH / 2, HALF_FIELD, FLOWER_OFFSET + FLOWER_WIDTH / 2),
+            new Rect(-HALF_FIELD, -FLOWER_OFFSET - FLOWER_WIDTH / 2, -HALF_FIELD + FLOWER_DEPTH, -FLOWER_OFFSET + FLOWER_WIDTH / 2),
+            new Rect(-FLOWER_OFFSET - FLOWER_WIDTH / 2, HALF_FIELD - FLOWER_DEPTH, -FLOWER_OFFSET + FLOWER_WIDTH / 2, HALF_FIELD),
+            new Rect(FLOWER_OFFSET - FLOWER_WIDTH / 2, -HALF_FIELD, FLOWER_OFFSET + FLOWER_WIDTH / 2, -HALF_FIELD + FLOWER_DEPTH),
+
+            new Rect(HALF_FIELD, -HALF_FIELD - 1, HALF_FIELD + 1, HALF_FIELD + 1),
+            new Rect(-HALF_FIELD - 1, -HALF_FIELD - 1, -HALF_FIELD, HALF_FIELD + 1),
+            new Rect(-HALF_FIELD - 1, HALF_FIELD, HALF_FIELD + 1, HALF_FIELD + 1),
+            new Rect(-HALF_FIELD - 1, -HALF_FIELD - 1, HALF_FIELD + 1, -HALF_FIELD),
     };
 
     // The two CELLS of the blue HIVE. When the HIVE tips, the scoring CELL switches sides.
     // LEFT/RIGHT are as the driver sees them, standing on their own alliance's side looking at the HIVE.
     // Aim point of the blue LEFT CELL (+X, +Y), tunable in the dashboard; the RIGHT CELL is the same point
-    // mirrored across x = 0. Estimated from the top-down field image (+/- ~1 in). Preset spots are in ShotTable.
+    // mirrored across x = 0. Estimated from the top-down field image (+/- ~1 in). Shot spots are in ShotTable.
     public static double cellAimX = 13.5;
     public static double cellAimY = 13;
     public static final TargetSide LEFT = new TargetSide("LEFT", 1);     // the +X CELL
@@ -103,6 +126,19 @@ public class FieldMap {
 
         public boolean contains(Point p) {
             return p.x > minX && p.x < maxX && p.y > minY && p.y < maxY;
+        }
+
+        // The point 'clearance' outside the nearest edge, straight out along x or y from p (inside)
+        public Point nearestOutside(Point p, double clearance) {
+            double left = p.x - minX;
+            double right = maxX - p.x;
+            double down = p.y - minY;
+            double up = maxY - p.y;
+            double nearest = Math.min(Math.min(left, right), Math.min(down, up));
+            if (nearest == left) return new Point(minX - clearance, p.y);
+            if (nearest == right) return new Point(maxX + clearance, p.y);
+            if (nearest == down) return new Point(p.x, minY - clearance);
+            return new Point(p.x, maxY + clearance);
         }
 
         public Point[] corners() {
@@ -164,10 +200,18 @@ public class FieldMap {
         return zones;
     }
 
-    // Waypoints from 'from' to 'to' where no straight leg crosses a HIVE leg, for
+    // True if the robot's center can be here, at any heading, without anything touching it
+    public static boolean isClear(Point p) {
+        for (Rect zone : keepOutZones()) {
+            if (zone.contains(p)) return false;
+        }
+        return true;
+    }
+
+    // Waypoints from 'from' to 'to' where no straight leg comes near an obstacle, for
     // OdometryHolonomicDrivetrain.setPositionDrive(Pose2D[]), which drives straight between waypoints.
-    // Detour waypoints keep the starting heading so the robot doesn't swing around next to the frame;
-    // only the last waypoint uses 'to's heading.
+    // Detour waypoints keep the starting heading so the robot doesn't swing around next to an obstacle;
+    // only the last waypoint uses 'to's heading. If 'to' isn't clear (isClear) the robot stays put.
     public static Pose2D[] routeTo(Pose2D from, Pose2D to) {
         Rect[] zones = keepOutZones();
         double heading = from.getHeading(AngleUnit.DEGREES);
@@ -175,17 +219,22 @@ public class FieldMap {
         Point end = new Point(to.getX(DistanceUnit.INCH), to.getY(DistanceUnit.INCH));
         List<Pose2D> path = new ArrayList<>();
 
-        // Starting inside a keep-out zone (e.g. pushed there by another robot): first move straight
-        // out along Y, to whichever side is closer
+        // Starting inside a keep-out zone (e.g. pushed there by another robot): first move straight out
+        // past its nearest edge, away from what's inside it. Zones only overlap next to the walls, where
+        // the FLOWER is checked before the wall, so a FLOWER exit is still checked against the wall.
         for (Rect zone : zones) {
             if (zone.contains(current)) {
-                double outY = current.y - zone.minY < zone.maxY - current.y ? zone.minY - 1 : zone.maxY + 1;
-                current = new Point(current.x, outY);
+                current = zone.nearestOutside(current, WAYPOINT_CLEARANCE);
                 path.add(pose(current, heading));
             }
         }
 
-        for (Point corner : shortestDetour(zones, current, end)) {
+        List<Point> corners = shortestDetour(zones, current, end);
+        if (corners == null) {
+            path.add(pose(current, heading));
+            return path.toArray(new Pose2D[0]);
+        }
+        for (Point corner : corners) {
             path.add(pose(corner, heading));
         }
         path.add(to);
@@ -194,16 +243,16 @@ public class FieldMap {
 
     // Shortest way from start to end using the keep-out zone corners as possible waypoints (the
     // shortest path around rectangles always bends only at their corners). Returns just the corners
-    // to drive through, empty if the straight line is clear.
+    // to drive through, empty if the straight line is clear, or null if there's no clear way (end
+    // inside a zone). Corners inside another zone are never connected, so they're never used.
     //
-    // Small graph (start, 8 corners, end), so a plain Dijkstra is plenty fast to run on a button press.
+    // Small graph (start, 40 corners, end), so a plain Dijkstra is plenty fast to run on a button press.
     private static List<Point> shortestDetour(Rect[] zones, Point start, Point end) {
         List<Point> nodes = new ArrayList<>();
         nodes.add(start);
-        double limit = HALF_FIELD - ROBOT_LENGTH / 2;   // corners the robot can't reach next to a wall are skipped
         for (Rect zone : zones) {
-            for (Point corner : zone.grow(1).corners()) {
-                if (Math.abs(corner.x) <= limit && Math.abs(corner.y) <= limit) nodes.add(corner);
+            for (Point corner : zone.grow(WAYPOINT_CLEARANCE).corners()) {
+                nodes.add(corner);
             }
         }
         nodes.add(end);
@@ -234,8 +283,8 @@ public class FieldMap {
             }
         }
 
+        if (previous[endIndex] == -1) return null;
         List<Point> corners = new ArrayList<>();
-        if (previous[endIndex] == -1) return corners;   // no clear way (bad placeholder preset): drive straight
         for (int i = previous[endIndex]; i > 0; i = previous[i]) {
             corners.add(0, nodes.get(i));
         }

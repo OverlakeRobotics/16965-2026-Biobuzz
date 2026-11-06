@@ -103,12 +103,21 @@ public class Shooter {
 
     // Hood angle in degrees. Clipped to what the servo can reach (position 0 to 1).
     public void setHoodAngle(double degrees) {
-        setHoodPosition((degrees - hoodZeroAngle) / (HOOD_SERVO_RANGE_DEGREES * HOOD_GEAR_RATIO));
+        setHoodPosition(hoodPositionFor(degrees));
     }
 
     // The angle the hood was last told to go to (a servo can't report where it actually is)
     public double getHoodAngle() {
-        return hoodZeroAngle + hoodPosition * HOOD_SERVO_RANGE_DEGREES * HOOD_GEAR_RATIO;
+        return hoodAngleAt(hoodPosition);
+    }
+
+    // Servo position <-> hood angle (degrees). The position isn't clipped here.
+    public double hoodPositionFor(double degrees) {
+        return (degrees - hoodZeroAngle) / (HOOD_SERVO_RANGE_DEGREES * HOOD_GEAR_RATIO);
+    }
+
+    public double hoodAngleAt(double position) {
+        return hoodZeroAngle + position * HOOD_SERVO_RANGE_DEGREES * HOOD_GEAR_RATIO;
     }
 
     public void open() {

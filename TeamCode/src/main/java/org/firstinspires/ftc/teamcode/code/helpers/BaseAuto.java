@@ -175,7 +175,7 @@ public abstract class BaseAuto extends OpMode implements PathPlanRunner.TagHandl
         return (curve, t) -> Math.toRadians(autoAimer.getAimHeading());
     }
 
-    // One loop of shooting, same rules as TeleOp: spin up to the closest shot point, open the blockers
+    // One loop of shooting, same rules as TeleOp: set the shooters for where the robot is, open the blockers
     // while aimed, and feed (after the delay) except while a flywheel is below speed.
     private void shootLoop(double delayLeft) {
         autoAimer.aimShooters();

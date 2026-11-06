@@ -28,8 +28,6 @@ public class AutoAimer {
 
     // How close the heading has to be to the aim heading to shoot (degrees)
     public static double headingTolerance = 3;
-    // How close the robot has to be to a ShotTable spot to shoot (inches)
-    public static double positionTolerance = 6;
 
     private final RobotHardware robot;
     private final Supplier<Pose2D> pose;
@@ -62,11 +60,10 @@ public class AutoAimer {
         return FieldMap.forAlliance(side.aimPoint(), isRed);
     }
 
-    // The preset spot for a side (FieldMap.LEFT or RIGHT), already facing that side's CELL
-    public Pose2D getPresetPose(FieldMap.TargetSide side) {
-        FieldMap.Point preset = ShotTable.fromTableQuadrant(ShotTable.preset().position(), side, isRed);
-        return new Pose2D(DistanceUnit.INCH, preset.x, preset.y, AngleUnit.DEGREES,
-                getAimHeadingFrom(preset.x, preset.y, getAimPoint(side)));
+    // A pose at a field position (e.g. a ShotTable spot), turned so the shooters face that side's CELL
+    public Pose2D getAimedPose(FieldMap.Point position, FieldMap.TargetSide side) {
+        return new Pose2D(DistanceUnit.INCH, position.x, position.y, AngleUnit.DEGREES,
+                getAimHeadingFrom(position.x, position.y, getAimPoint(side)));
     }
 
     // ---- heading -----------------------------------------------------------------------------
@@ -100,25 +97,13 @@ public class AutoAimer {
 
     // ---- shot settings -----------------------------------------------------------------------
 
-    // The ShotTable spot closest to the robot
+    // ShotTable settings for where the robot is now
     public ShotTable.ShotPoint getShot() {
         Pose2D current = pose.get();
-        return ShotTable.closest(new FieldMap.Point(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH)), isRed);
+        return ShotTable.at(new FieldMap.Point(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH)), isRed);
     }
 
-    // How far (inches) the robot is from the closest ShotTable spot
-    public double getShotDistance() {
-        Pose2D current = pose.get();
-        FieldMap.Point robotPoint = ShotTable.toTableQuadrant(
-                new FieldMap.Point(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH)), isRed);
-        return getShot().position().distanceTo(robotPoint);
-    }
-
-    public boolean isAtShotPoint() {
-        return getShotDistance() <= positionTolerance;
-    }
-
-    // Sets both flywheels and hoods to the closest shot point's settings
+    // Sets both flywheels and hoods to the ShotTable settings for where the robot is
     public void aimShooters() {
         aimShooters(0, 0);
     }

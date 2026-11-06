@@ -1,38 +1,39 @@
 package org.firstinspires.ftc.teamcode.code;
 
-import com.acmerobotics.dashboard.config.Config;
-
-// Spots on the field where we know good shooter settings (found with ManualTestTeleOp). AutoAimer uses
-// the settings of whichever spot is closest to the robot.
+// Shooter settings tuned at spots on the field (with ShotTuner). Between spots the settings are
+// interpolated by distance to the CELL, so the shooters are set for wherever the robot is.
 //
 // Only written for ONE quadrant: the blue half, LEFT CELL side (+X, +Y). The field is symmetric, so the
 // same spots work in the other three quadrants: RIGHT side mirrors x, red rotates 180 degrees.
 // toTableQuadrant / fromTableQuadrant do the conversion, so nothing here needs duplicating.
-@Config
 public class ShotTable {
-    // The preset: where the TeleOp bumpers drive (left bumper = LEFT side, right bumper = RIGHT side).
-    // Also a shot point. Tunable live in the dashboard (ShotTable). TODO: measure and tune.
-     public static double presetX = 50;
-    public static double presetY = 13;
-    public static double presetPollenVelocity = 1450;   // ticks/s
-    public static double presetNectarVelocity = 1900;
-    public static double presetPollenHoodAngle = 16.2;  // degrees
-    public static double presetNectarHoodAngle = 17.04;
-
-    // More spots. To add one: drive there in ManualTestTeleOp, tune until both shooters score, then copy
-    // the Position X/Y, both target velocities and both hood angles from telemetry into a new line.
-    private static final ShotPoint[] OTHER_POINTS = {
+    // The spots ShotTuner steps through, closest to the CELL first. A spot with only x, y isn't tuned
+    // yet and is left out of the interpolation. To tune one: drive there in ShotTuner, adjust until both
+    // shooters score, then copy that spot's "Copy" line from telemetry over its line here.
+    // Every spot has to be FieldMap.isClear (the robot can turn all the way around there without hitting
+    // the HIVE, a FLOWER or a wall); ShotTuner won't drive to one that isn't.
+    // Distances are to the CELL aim point at (13.5, 13). The two 56.3 in spots are the same distance from
+    // either side of the CELL: if they need different settings, distance alone isn't enough.
+    // TODO: tune all but the Auto spot.
+    public static final ShotPoint[] POINTS = {
+            new ShotPoint(40, 13),                           // 26.5 in from the CELL; 22.5 in was too close to shoot
+            new ShotPoint(43, 13),                           // 29.5
+            new ShotPoint(50, 13, 1450, 1900, 16.2, 17.04),  // 36.5, where the Autos shoot
+            new ShotPoint(56, 0),                            // 44.4
+            new ShotPoint(56, -13),                          // 49.8
+            new ShotPoint(56, 50),                           // 56.3, from the +Y side
+            new ShotPoint(56, -24),                          // 56.3, from the -Y side
+            new ShotPoint(56, -45),                          // 71.9
+            new ShotPoint(55, -55),                          // 79.7
     };
 
     public static final class ShotPoint {
-        public final String name;
         public final double x, y;                              // blue, LEFT side quadrant (inches)
         public final double pollenVelocity, nectarVelocity;    // ticks/s
         public final double pollenHoodAngle, nectarHoodAngle;  // degrees
 
-        public ShotPoint(String name, double x, double y, double pollenVelocity, double nectarVelocity,
+        public ShotPoint(double x, double y, double pollenVelocity, double nectarVelocity,
                          double pollenHoodAngle, double nectarHoodAngle) {
-            this.name = name;
             this.x = x;
             this.y = y;
             this.pollenVelocity = pollenVelocity;
@@ -41,25 +42,51 @@ public class ShotTable {
             this.nectarHoodAngle = nectarHoodAngle;
         }
 
+        // A spot that isn't tuned yet
+        public ShotPoint(double x, double y) {
+            this(x, y, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+        }
+
+        public boolean isTuned() {
+            return !Double.isNaN(pollenVelocity);
+        }
+
         public FieldMap.Point position() {
             return new FieldMap.Point(x, y);
         }
-    }
 
-    // Built from the dashboard values every call, so edits apply immediately
-    public static ShotPoint preset() {
-        return new ShotPoint("Preset", presetX, presetY, presetPollenVelocity, presetNectarVelocity,
-                presetPollenHoodAngle, presetNectarHoodAngle);
-    }
-
-    // The shot point closest to where the robot is
-    public static ShotPoint closest(FieldMap.Point robotPosition, boolean isRed) {
-        FieldMap.Point p = toTableQuadrant(robotPosition, isRed);
-        ShotPoint best = preset();
-        for (ShotPoint shot : OTHER_POINTS) {
-            if (shot.position().distanceTo(p) < best.position().distanceTo(p)) best = shot;
+        public double distanceToCell() {
+            return position().distanceTo(FieldMap.LEFT.aimPoint());
         }
-        return best;
+    }
+
+    // Settings for a robot position, interpolated in a straight line between the tuned spots just closer
+    // to and just farther from the CELL. Closer or farther than every tuned spot uses the nearest one.
+    public static ShotPoint at(FieldMap.Point robotPosition, boolean isRed) {
+        FieldMap.Point p = toTableQuadrant(robotPosition, isRed);
+        double distance = p.distanceTo(FieldMap.LEFT.aimPoint());
+        ShotPoint closer = null;
+        ShotPoint farther = null;
+        for (ShotPoint spot : POINTS) {
+            if (!spot.isTuned()) continue;
+            double d = spot.distanceToCell();
+            if (d <= distance && (closer == null || d > closer.distanceToCell())) closer = spot;
+            if (d >= distance && (farther == null || d < farther.distanceToCell())) farther = spot;
+        }
+        if (closer == null) closer = farther;
+        if (farther == null) farther = closer;
+
+        double span = farther.distanceToCell() - closer.distanceToCell();
+        double t = span > 0 ? (distance - closer.distanceToCell()) / span : 0;
+        return new ShotPoint(p.x, p.y,
+                lerp(closer.pollenVelocity, farther.pollenVelocity, t),
+                lerp(closer.nectarVelocity, farther.nectarVelocity, t),
+                lerp(closer.pollenHoodAngle, farther.pollenHoodAngle, t),
+                lerp(closer.nectarHoodAngle, farther.nectarHoodAngle, t));
+    }
+
+    private static double lerp(double a, double b, double t) {
+        return a + (b - a) * t;
     }
 
     // Field position -> the matching spot in the table's quadrant

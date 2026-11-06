@@ -17,17 +17,15 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //
 // Controls (gamepad 1):
 //   Sticks         drive
-//   LB / RB        drive to the LEFT / RIGHT preset (as the driver sees it, around the HIVE legs) and
-//                  face that CELL, then hold there; any stick cancels
-//   Guide (center) drive back to the TeleOp start pose around the HIVE legs, then hold there, so the
+//   Guide (center) drive back to the TeleOp start pose around the field elements, then hold there, so the
 //                  OpMode can be stopped and re-inited from the same spot; any stick cancels
 //   D-pad up/down  pollen target speed +/- velocityStep (hold LT: nectar instead), on top of the ShotTable
-//   Hold RT        shoot: blockers open while aimed at the CELL and within AutoAimer.positionTolerance of a
-//                  ShotTable spot; the intake feeds except while a flywheel is low
+//   Hold RT        shoot: blockers open while aimed at the CELL; the intake feeds except while a flywheel
+//                  is low
 //   B              toggle intake + transfer
 //   Hold A         reverse intake + transfer
 //   X              toggle the flower mechanism open/closed (starts open)
-// The flywheels always spin at the closest ShotTable point's speeds, plus the D-pad offsets.
+// The flywheels and hoods are always set by the ShotTable for where the robot is, plus the D-pad offsets.
 @Config
 public abstract class BaseTeleOp extends OpMode {
     public static double driveVelocity = 2800;
@@ -49,7 +47,7 @@ public abstract class BaseTeleOp extends OpMode {
     protected OdometryHolonomicDrivetrain driveTrain;
     protected AutoAimer autoAimer;
 
-    protected boolean routing = false;       // driving to, or holding at, a preset or the start pose
+    protected boolean routing = false;       // driving to, or holding at, the start pose
     protected boolean intakeOn = false;
     protected boolean shooting = false;
     // D-pad changes to the ShotTable velocities (ticks/s), kept for the rest of this TeleOp run
@@ -88,14 +86,10 @@ public abstract class BaseTeleOp extends OpMode {
         addTelemetry();
     }
 
-    // LB/RB start a route to that side's preset, guide a route back to the start pose. After arriving the
-    // robot keeps holding that spot and heading (pushing back if bumped) until any stick moves.
+    // Guide starts a route back to the start pose. After arriving the robot keeps holding that spot and
+    // heading (pushing back if bumped) until any stick moves.
     protected void handleAiming() {
-        if (gamepad1.leftBumperWasPressed()) {
-            routeTo(autoAimer.getPresetPose(FieldMap.LEFT));
-        } else if (gamepad1.rightBumperWasPressed()) {
-            routeTo(autoAimer.getPresetPose(FieldMap.RIGHT));
-        } else if (gamepad1.guideWasPressed()) {
+        if (gamepad1.guideWasPressed()) {
             routeTo(getDefaultStartPose());
         }
 
@@ -104,14 +98,14 @@ public abstract class BaseTeleOp extends OpMode {
         }
     }
 
-    private void routeTo(Pose2D target) {
+    protected void routeTo(Pose2D target) {
         driveTrain.setVelocity((int) routeVelocity);
         driveTrain.setTolerance(routeTolerance);
         driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), target));
         routing = true;
     }
 
-    private Pose2D getDefaultStartPose() {
+    protected Pose2D getDefaultStartPose() {
         return FieldMap.forAlliance(new Pose2D(DistanceUnit.INCH, defaultStartX, defaultStartY,
                 AngleUnit.DEGREES, defaultStartHeading), isRedAlliance());
     }
@@ -153,21 +147,21 @@ public abstract class BaseTeleOp extends OpMode {
         }
     }
 
-    // Flywheels and hoods are always set to the closest ShotTable point (plus the D-pad offsets). Holding RT shoots whenever ready;
-    // otherwise the intake does what B/A set.
+    // Flywheels and hoods are always set by the ShotTable for where the robot is (plus the D-pad offsets).
+    // Holding RT shoots whenever ready; otherwise the intake does what B/A set.
     protected void handleShooting() {
         autoAimer.aimShooters(pollenOffset, nectarOffset);
 
         shooting = gamepad1.right_trigger > 0.3;
         if (shooting) {
-            // Blockers stay open while aimed and near a shot spot; the intake pauses whenever a flywheel is low
-            boolean inPosition = autoAimer.isHeadingOnTarget() && autoAimer.isAtShotPoint();
-            if (inPosition) {
+            // Blockers stay open while aimed; the intake pauses whenever a flywheel is low
+            boolean aimed = autoAimer.isHeadingOnTarget();
+            if (aimed) {
                 robot.openBlockers();
             } else {
                 robot.closeBlockers();
             }
-            if (inPosition && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
+            if (aimed && !robot.pollen.isBelowSpeed() && !robot.nectar.isBelowSpeed()) {
                 robot.intake.in();
             } else {
                 robot.intake.stop();
@@ -193,7 +187,6 @@ public abstract class BaseTeleOp extends OpMode {
         telemetry.addData("Aim", !routing ? "MANUAL" : driveTrain.isDriving() ? "ROUTING" : "HOLDING");
         telemetry.addData("Target side", autoAimer.getActiveSide().name);
         telemetry.addData("Heading error", autoAimer.getHeadingError());
-        telemetry.addData("Shot point", "%s, %.1f in away", autoAimer.getShot().name, autoAimer.getShotDistance());
         telemetry.addData("Ready to shoot", autoAimer.readyToShoot());
         robot.pollen.addTelemetry(telemetry, "Pollen");
         robot.nectar.addTelemetry(telemetry, "Nectar");
