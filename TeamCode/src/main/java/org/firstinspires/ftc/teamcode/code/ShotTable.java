@@ -23,8 +23,8 @@ public class ShotTable {
             new ShotPoint(56, -13),                          // 49.8
             new ShotPoint(56, 50),                           // 56.3, from the +Y side
             new ShotPoint(56, -24),                          // 56.3, from the -Y side
-            new ShotPoint(56, -45),                          // 71.9
-            new ShotPoint(55, -55),                          // 79.7
+            new ShotPoint(51, -40),                          // 64.9
+            new ShotPoint(51, -51),                          // 74.2, toward the corner; 8 in from the walls at any heading
     };
 
     public static final class ShotPoint {

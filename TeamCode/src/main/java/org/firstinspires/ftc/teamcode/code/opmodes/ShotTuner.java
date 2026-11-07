@@ -24,17 +24,18 @@ import java.util.Arrays;
 //   Guide (center)     drive back to the start pose, to stop and re-init from the same spot
 //   Right stick        turn in place (still holding the spot), to try shots at other headings
 //   A                  switch the D-pad between POLLEN and NECTAR
-//   D-pad up/down      flywheel velocity +/- velocityFractionStep of Shooter.MAX_VELOCITY (hold to repeat)
+//   D-pad up/down      flywheel velocity +/- tuneVelocityStep ticks/s, 0 to Shooter.MAX_VELOCITY (hold to repeat)
 //   D-pad right/left   hood servo position +/- hoodPositionStep (hold to repeat)
 //   B                  toggle intake + transfer (starts off)
 // The blockers stay open whenever the flywheels are running at the tuning values (once a spot is picked),
 // whatever their measured speed, so the intake toggle is what starts and stops shooting. Each spot starts from
 // the ShotTable (interpolated if it isn't tuned yet) and keeps its changes for the rest of the run, so
-// going back to a spot picks up where you left off. Telemetry shows a "Copy" line per visited spot to paste into ShotTable.POINTS.
+// going back to a spot picks up where you left off. Telemetry shows each shooter's target velocity, measured
+// velocity and hood: copy the target velocities and hood angles into that spot's line in ShotTable.POINTS.
 @Config
 @TeleOp(name = "Shot Tuner (Red LEFT)", group = "TeleOp")
 public class ShotTuner extends BaseTeleOp {
-    public static double velocityFractionStep = 0.01;
+    public static double tuneVelocityStep = 28;   // ticks/s per step, 1% of Shooter.MAX_VELOCITY
     public static double hoodPositionStep = 0.01;
     public static double turnSpeed = 30;          // degrees/s at full right stick
     public static double repeatDelay = 0.3;       // seconds a D-pad button is held before it starts repeating
@@ -42,8 +43,7 @@ public class ShotTuner extends BaseTeleOp {
 
     private static final ShotTable.ShotPoint[] SPOTS = ShotTable.POINTS;
 
-    // This run's settings for each spot, NaN until visited. Velocity is a fraction of MAX_VELOCITY, hood
-    // is the servo position.
+    // This run's settings for each spot, NaN until visited. Velocity in ticks/s, hood as the servo position.
     private final double[] pollenVelocity = nan(SPOTS.length);
     private final double[] nectarVelocity = nan(SPOTS.length);
     private final double[] pollenHood = nan(SPOTS.length);
@@ -92,8 +92,8 @@ public class ShotTuner extends BaseTeleOp {
         if (Double.isNaN(pollenVelocity[index])) {
             // First visit: start from what the ShotTable would use here
             ShotTable.ShotPoint shot = ShotTable.at(field, true);
-            pollenVelocity[index] = Range.clip(shot.pollenVelocity / Shooter.MAX_VELOCITY, 0, 1);
-            nectarVelocity[index] = Range.clip(shot.nectarVelocity / Shooter.MAX_VELOCITY, 0, 1);
+            pollenVelocity[index] = Range.clip(shot.pollenVelocity, 0, Shooter.MAX_VELOCITY);
+            nectarVelocity[index] = Range.clip(shot.nectarVelocity, 0, Shooter.MAX_VELOCITY);
             pollenHood[index] = Range.clip(robot.pollen.hoodPositionFor(shot.pollenHoodAngle), 0, 1);
             nectarHood[index] = Range.clip(robot.nectar.hoodPositionFor(shot.nectarHoodAngle), 0, 1);
         }
@@ -152,7 +152,7 @@ public class ShotTuner extends BaseTeleOp {
 
         double[] velocity = nectarSelected ? nectarVelocity : pollenVelocity;
         double[] hood = nectarSelected ? nectarHood : pollenHood;
-        velocity[spot] = Range.clip(velocity[spot] + velocityChange * velocityFractionStep, 0, 1);
+        velocity[spot] = Range.clip(velocity[spot] + velocityChange * tuneVelocityStep, 0, Shooter.MAX_VELOCITY);
         hood[spot] = Range.clip(hood[spot] + hoodChange * hoodPositionStep, 0, 1);
     }
 
@@ -160,51 +160,30 @@ public class ShotTuner extends BaseTeleOp {
     @Override
     protected void handleShooting() {
         if (spot < 0) return;
-        robot.setShooterVelocities(pollenVelocity[spot] * Shooter.MAX_VELOCITY, nectarVelocity[spot] * Shooter.MAX_VELOCITY);
+        robot.setShooterVelocities(pollenVelocity[spot], nectarVelocity[spot]);
         robot.pollen.setHoodPosition(pollenHood[spot]);
         robot.nectar.setHoodPosition(nectarHood[spot]);
 
-        shooting = true;
         robot.openBlockers();
     }
 
+    // Only what's needed while tuning: where the robot is, which shooter the D-pad changes, and each
+    // shooter's target / measured velocity and hood
     @Override
     protected void addTelemetry() {
         Pose2D pose = driveTrain.getPosition();
-        telemetry.addData("Runtime (s)", "%.1f", getRuntime());   // keeps counting while telemetry is live
-        telemetry.addData("Position", "X: %.1f, Y: %.1f, H: %.1f",
+        telemetry.addData("Position (Pinpoint)", "X %.1f in, Y %.1f in, heading %.1f deg",
                 pose.getX(DistanceUnit.INCH), pose.getY(DistanceUnit.INCH), pose.getHeading(AngleUnit.DEGREES));
-        if (spot < 0) {
-            telemetry.addLine("Press X to drive to the first spot");
-        } else {
-            ShotTable.ShotPoint s = SPOTS[spot];
-            FieldMap.Point field = spotOnField(spot);
-            telemetry.addData("Spot", "%d of %d: table (%.0f, %.0f), field (%.0f, %.0f), %.1f in from the CELL%s",
-                    spot + 1, SPOTS.length, s.x, s.y, field.x, field.y, s.distanceToCell(),
-                    s.isTuned() ? "" : ", not tuned yet");
-        }
-        if (spot >= 0 && !FieldMap.isClear(spotOnField(spot))) {
-            telemetry.addLine("SPOT TOO CLOSE TO A FIELD ELEMENT: not driving there, move it in ShotTable");
-        }
-        telemetry.addData("Drive", target == null ? "STOPPED" : arrived ? "HOLDING" : "DRIVING");
-        telemetry.addData("Heading off aim (deg)", "%.1f", -autoAimer.getHeadingError());
         telemetry.addData("D-pad controls", nectarSelected ? "NECTAR" : "POLLEN");
-        telemetry.addData("Blockers", shooting ? "OPEN" : "CLOSED (pick a spot with X)");
-        telemetry.addData("Intake", intakeOn ? "ON" : "OFF");
-        if (spot >= 0) {
-            telemetry.addData("Pollen", "velocity %.2f of max, hood position %.2f", pollenVelocity[spot], pollenHood[spot]);
-            telemetry.addData("Nectar", "velocity %.2f of max, hood position %.2f", nectarVelocity[spot], nectarHood[spot]);
-        }
-        robot.pollen.addTelemetry(telemetry, "Pollen");
-        robot.nectar.addTelemetry(telemetry, "Nectar");
-        for (int i = 0; i < SPOTS.length; i++) {
-            if (Double.isNaN(pollenVelocity[i])) continue;
-            telemetry.addData("Copy " + (i + 1), "new ShotPoint(%.0f, %.0f, %.0f, %.0f, %.2f, %.2f),",
-                    SPOTS[i].x, SPOTS[i].y,
-                    pollenVelocity[i] * Shooter.MAX_VELOCITY, nectarVelocity[i] * Shooter.MAX_VELOCITY,
-                    robot.pollen.hoodAngleAt(pollenHood[i]), robot.nectar.hoodAngleAt(nectarHood[i]));
-        }
+        addShooterLine("Pollen", robot.pollen);
+        addShooterLine("Nectar", robot.nectar);
+        telemetry.addLine("X/Y next/prev spot | A pollen/nectar | D-pad up/down velocity, right/left hood | B intake | R stick turn | Guide start");
         telemetry.update();
+    }
+
+    private void addShooterLine(String name, Shooter shooter) {
+        telemetry.addData(name, "target %.0f, current %.0f ticks/s, hood %.2f (%.2f deg)",
+                shooter.getTargetVelocity(), shooter.getVelocity(), shooter.getHoodPosition(), shooter.getHoodAngle());
     }
 
     private static double[] nan(int length) {
