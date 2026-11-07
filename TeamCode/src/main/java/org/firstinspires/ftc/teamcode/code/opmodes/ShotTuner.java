@@ -20,7 +20,7 @@ import java.util.Arrays;
 //
 // Controls (gamepad 1):
 //   X / Y              drive to the next / previous ShotTable spot (around the HIVE legs, FLOWERS and
-//                      walls), facing the CELL, then hold there
+//                      walls), at the ShotTable heading for that spot, then hold there
 //   Guide (center)     drive back to the start pose, to stop and re-init from the same spot
 //   Right stick        turn in place (still holding the spot), to try shots at other headings
 //   A                  switch the D-pad between POLLEN and NECTAR
@@ -30,8 +30,8 @@ import java.util.Arrays;
 // The blockers stay open whenever the flywheels are running at the tuning values (once a spot is picked),
 // whatever their measured speed, so the intake toggle is what starts and stops shooting. Each spot starts from
 // the ShotTable (interpolated if it isn't tuned yet) and keeps its changes for the rest of the run, so
-// going back to a spot picks up where you left off. Telemetry shows each shooter's target velocity, measured
-// velocity and hood: copy the target velocities and hood angles into that spot's line in ShotTable.POINTS.
+// going back to a spot picks up where you left off. Telemetry shows the position and heading, and each
+// shooter's target velocity, measured velocity and hood: ShotTable.POINTS says how to copy them in.
 @Config
 @TeleOp(name = "Shot Tuner (Red LEFT)", group = "TeleOp")
 public class ShotTuner extends BaseTeleOp {
@@ -97,7 +97,7 @@ public class ShotTuner extends BaseTeleOp {
             pollenHood[index] = Range.clip(robot.pollen.hoodPositionFor(shot.pollenHoodAngle), 0, 1);
             nectarHood[index] = Range.clip(robot.nectar.hoodPositionFor(shot.nectarHoodAngle), 0, 1);
         }
-        driveTo(autoAimer.getAimedPose(field, FieldMap.LEFT));
+        driveTo(autoAimer.getAimedPose(field));
     }
 
     private static FieldMap.Point spotOnField(int index) {

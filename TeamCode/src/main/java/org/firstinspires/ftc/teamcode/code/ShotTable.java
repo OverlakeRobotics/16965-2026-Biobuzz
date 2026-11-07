@@ -1,92 +1,109 @@
 package org.firstinspires.ftc.teamcode.code;
 
-// Shooter settings tuned at spots on the field (with ShotTuner). Between spots the settings are
-// interpolated by distance to the CELL, so the shooters are set for wherever the robot is.
+import org.firstinspires.ftc.teamcode.code.helpers.AutoAimer;
+
+import java.util.function.ToDoubleFunction;
+
+// Shooter settings tuned at spots on the field (with ShotTuner): the robot heading that scored, and each
+// shooter's velocity and hood angle. Between spots every setting is interpolated by position, so the
+// shooters are set for wherever the robot is. Position matters, not just distance to the CELL: tuned spots
+// the same distance away needed different settings.
 //
 // Only written for ONE quadrant: the blue half, LEFT CELL side (+X, +Y). The field is symmetric, so the
 // same spots work in the other three quadrants: RIGHT side mirrors x, red rotates 180 degrees.
 // toTableQuadrant / fromTableQuadrant do the conversion, so nothing here needs duplicating.
 public class ShotTable {
-    // The spots ShotTuner steps through, closest to the CELL first. A spot with only x, y isn't tuned
-    // yet and is left out of the interpolation. To tune one: drive there in ShotTuner, adjust until both
-    // shooters score, then copy that spot's "Copy" line from telemetry over its line here.
-    // Every spot has to be FieldMap.isClear (the robot can turn all the way around there without hitting
-    // the HIVE, a FLOWER or a wall); ShotTuner won't drive to one that isn't.
-    // Distances are to the CELL aim point at (13.5, 13). The two 56.3 in spots are the same distance from
-    // either side of the CELL: if they need different settings, distance alone isn't enough.
-    // TODO: tune all but the Auto spot.
+    private static final double UNTUNED = Double.NaN;
+
+    // The spots ShotTuner steps through, in driving order. They cover the region the drivers shoot from on
+    // the LEFT side (red field X -72 to -38, Y -72 to 44.6), and every one is FieldMap.isClear (the robot can
+    // turn all the way around there without hitting the HIVE, a FLOWER or a wall).
+    // A setting that isn't tuned at a spot is UNTUNED and left out of that setting's interpolation; a spot
+    // with only x, y has nothing tuned yet.
+    //
+    // Copying from the ShotTuner screen (red, LEFT side), Position line X, Y, heading:
+    //   x = -X, y = -Y, heading = heading + 180
+    //   velocities = the target ticks/s, hood angles = the degrees in brackets
     public static final ShotPoint[] POINTS = {
-            new ShotPoint(40, 13),                           // 26.5 in from the CELL; 22.5 in was too close to shoot
-            new ShotPoint(43, 13),                           // 29.5
-            new ShotPoint(50, 13, 1450, 1900, 16.2, 17.04),  // 36.5, where the Autos shoot
-            new ShotPoint(56, 0),                            // 44.4
-            new ShotPoint(56, -13),                          // 49.8
-            new ShotPoint(56, 50),                           // 56.3, from the +Y side
-            new ShotPoint(56, -24),                          // 56.3, from the -Y side
-            new ShotPoint(51, -40),                          // 64.9
-            new ShotPoint(51, -51),                          // 74.2, toward the corner; 8 in from the walls at any heading
+            //            x      y     heading pollen vel/hood   nectar vel/hood
+            new ShotPoint(40.4,  12.9,  90.5,  1562, 16.2,       UNTUNED, UNTUNED),
+            new ShotPoint(43.3,  13.0,  90.2,  1618, 16.2,       UNTUNED, UNTUNED),
+            new ShotPoint(50.1,  13.2,  91.3,  1618, 24.2,       1900, 17.04),   // where the Autos shoot
+            new ShotPoint(50, 30),   // TODO: tune
+            new ShotPoint(40, 30),   // TODO: tune
+            new ShotPoint(40, 50),   // TODO: tune
+            new ShotPoint(52, 52),   // TODO: tune. Corner: 7 in from both walls with the robot turned any way
+            new ShotPoint(56.1,  49.9,  127.5, 1646, 28.2,       UNTUNED, UNTUNED),
+            new ShotPoint(56.1,  0.0,   63.6,  1590, 20.2,       UNTUNED, UNTUNED),
+            new ShotPoint(55.9,  -13.1, 55.5,  1562, 16.2,       UNTUNED, UNTUNED),
+            new ShotPoint(55.8,  -24.0, 42.8,  1674, 20.2,       UNTUNED, UNTUNED),
+            new ShotPoint(52, -40),  // TODO: tune
+            new ShotPoint(40, -40),  // TODO: tune
+            new ShotPoint(40, -22),  // TODO: tune
+            new ShotPoint(40, -5),   // TODO: tune
     };
 
     public static final class ShotPoint {
         public final double x, y;                              // blue, LEFT side quadrant (inches)
-        public final double pollenVelocity, nectarVelocity;    // ticks/s
-        public final double pollenHoodAngle, nectarHoodAngle;  // degrees
+        public final double heading;                           // robot heading that scored, same quadrant (degrees)
+        public final double pollenVelocity, pollenHoodAngle;   // ticks/s, degrees
+        public final double nectarVelocity, nectarHoodAngle;
 
-        public ShotPoint(double x, double y, double pollenVelocity, double nectarVelocity,
-                         double pollenHoodAngle, double nectarHoodAngle) {
+        public ShotPoint(double x, double y, double heading, double pollenVelocity, double pollenHoodAngle,
+                         double nectarVelocity, double nectarHoodAngle) {
             this.x = x;
             this.y = y;
+            this.heading = heading;
             this.pollenVelocity = pollenVelocity;
-            this.nectarVelocity = nectarVelocity;
             this.pollenHoodAngle = pollenHoodAngle;
+            this.nectarVelocity = nectarVelocity;
             this.nectarHoodAngle = nectarHoodAngle;
         }
 
-        // A spot that isn't tuned yet
+        // A spot with nothing tuned yet
         public ShotPoint(double x, double y) {
-            this(x, y, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
-        }
-
-        public boolean isTuned() {
-            return !Double.isNaN(pollenVelocity);
+            this(x, y, UNTUNED, UNTUNED, UNTUNED, UNTUNED, UNTUNED);
         }
 
         public FieldMap.Point position() {
             return new FieldMap.Point(x, y);
         }
 
-        public double distanceToCell() {
-            return position().distanceTo(FieldMap.LEFT.aimPoint());
+        // How far the heading is turned from pointing the shooters straight at the CELL (degrees,
+        // counter-clockwise positive). Kept as a turn, not a heading, so it can be interpolated between spots.
+        public double headingOffset() {
+            return AutoAimer.normalize(heading - AutoAimer.aimHeadingFrom(x, y, FieldMap.LEFT.aimPoint()));
         }
     }
 
-    // Settings for a robot position, interpolated in a straight line between the tuned spots just closer
-    // to and just farther from the CELL. Closer or farther than every tuned spot uses the nearest one.
+    // Settings for a robot position. Each one is interpolated on its own over the spots where it's tuned;
+    // the heading offset is 0 (straight at the CELL) if no spot has a heading.
     public static ShotPoint at(FieldMap.Point robotPosition, boolean isRed) {
         FieldMap.Point p = toTableQuadrant(robotPosition, isRed);
-        double distance = p.distanceTo(FieldMap.LEFT.aimPoint());
-        ShotPoint closer = null;
-        ShotPoint farther = null;
-        for (ShotPoint spot : POINTS) {
-            if (!spot.isTuned()) continue;
-            double d = spot.distanceToCell();
-            if (d <= distance && (closer == null || d > closer.distanceToCell())) closer = spot;
-            if (d >= distance && (farther == null || d < farther.distanceToCell())) farther = spot;
-        }
-        if (closer == null) closer = farther;
-        if (farther == null) farther = closer;
-
-        double span = farther.distanceToCell() - closer.distanceToCell();
-        double t = span > 0 ? (distance - closer.distanceToCell()) / span : 0;
+        double straightAtCell = AutoAimer.aimHeadingFrom(p.x, p.y, FieldMap.LEFT.aimPoint());
         return new ShotPoint(p.x, p.y,
-                lerp(closer.pollenVelocity, farther.pollenVelocity, t),
-                lerp(closer.nectarVelocity, farther.nectarVelocity, t),
-                lerp(closer.pollenHoodAngle, farther.pollenHoodAngle, t),
-                lerp(closer.nectarHoodAngle, farther.nectarHoodAngle, t));
+                straightAtCell + interpolate(p, ShotPoint::headingOffset, 0),
+                interpolate(p, spot -> spot.pollenVelocity, UNTUNED),
+                interpolate(p, spot -> spot.pollenHoodAngle, UNTUNED),
+                interpolate(p, spot -> spot.nectarVelocity, UNTUNED),
+                interpolate(p, spot -> spot.nectarHoodAngle, UNTUNED));
     }
 
-    private static double lerp(double a, double b, double t) {
-        return a + (b - a) * t;
+    // Inverse-distance-squared average of one setting over the spots where it's tuned: standing on a spot
+    // gives exactly its value, and in between the closest spots count the most. 'untuned' if no spot has it.
+    private static double interpolate(FieldMap.Point p, ToDoubleFunction<ShotPoint> setting, double untuned) {
+        double weightedSum = 0;
+        double totalWeight = 0;
+        for (ShotPoint spot : POINTS) {
+            double value = setting.applyAsDouble(spot);
+            if (Double.isNaN(value)) continue;
+            double distance = spot.position().distanceTo(p);
+            if (distance < 0.01) return value;
+            double weight = 1 / (distance * distance);
+            weightedSum += weight * value;
+            totalWeight += weight;
+        }
+        return totalWeight > 0 ? weightedSum / totalWeight : untuned;
     }
 
     // Field position -> the matching spot in the table's quadrant

@@ -48,36 +48,47 @@ public class AutoAimer {
 
     // The CELL to shoot at: the one on the robot's half of the field (the other one can't be scored from here)
     public FieldMap.TargetSide getActiveSide() {
-        Pose2D bluePose = FieldMap.forAlliance(pose.get(), isRed);
-        return bluePose.getX(DistanceUnit.INCH) > 0 ? FieldMap.LEFT : FieldMap.RIGHT;
+        return sideAt(robotPoint());
     }
 
-    public FieldMap.Point getAimPoint() {
-        return getAimPoint(getActiveSide());
+    private FieldMap.TargetSide sideAt(FieldMap.Point position) {
+        return FieldMap.forAlliance(position, isRed).x > 0 ? FieldMap.LEFT : FieldMap.RIGHT;
     }
 
     private FieldMap.Point getAimPoint(FieldMap.TargetSide side) {
         return FieldMap.forAlliance(side.aimPoint(), isRed);
     }
 
-    // A pose at a field position (e.g. a ShotTable spot), turned so the shooters face that side's CELL
-    public Pose2D getAimedPose(FieldMap.Point position, FieldMap.TargetSide side) {
-        return new Pose2D(DistanceUnit.INCH, position.x, position.y, AngleUnit.DEGREES,
-                getAimHeadingFrom(position.x, position.y, getAimPoint(side)));
+    private FieldMap.Point robotPoint() {
+        Pose2D current = pose.get();
+        return new FieldMap.Point(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH));
+    }
+
+    // A pose at a field position (e.g. a ShotTable spot), turned to shoot from there
+    public Pose2D getAimedPose(FieldMap.Point position) {
+        return new Pose2D(DistanceUnit.INCH, position.x, position.y, AngleUnit.DEGREES, getAimHeadingAt(position));
     }
 
     // ---- heading -----------------------------------------------------------------------------
 
-    // Robot heading (degrees) that points the shooters (left side) at the CELL from where the robot is now
+    // Robot heading (degrees) to shoot from where the robot is now
     public double getAimHeading() {
-        Pose2D current = pose.get();
-        return getAimHeadingFrom(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH), getAimPoint());
+        return getAimHeadingAt(robotPoint());
     }
 
-    // With the shooters at the robot center this is just bearing - 90. Since they sit forward/back of
-    // center, the robot turns a bit more or less so the line out of the shooters' average position
-    // passes through the CELL.
-    private double getAimHeadingFrom(double x, double y, FieldMap.Point aim) {
+    // Points the shooters at that half's CELL, then turns by the ShotTable heading offset (how far the
+    // tuned headings were turned from that). The offsets are tuned for the LEFT CELL, so on the mirrored
+    // RIGHT side the robot turns the other way. Red is rotated, not mirrored, so it turns the same way.
+    private double getAimHeadingAt(FieldMap.Point position) {
+        FieldMap.TargetSide side = sideAt(position);
+        double offset = ShotTable.at(position, isRed).headingOffset();
+        return normalize(aimHeadingFrom(position.x, position.y, getAimPoint(side)) + (side == FieldMap.LEFT ? offset : -offset));
+    }
+
+    // Heading (degrees) that points the shooters (left side) straight at 'aim' from (x, y). With the
+    // shooters at the robot center this is just bearing - 90. Since they sit forward/back of center, the
+    // robot turns a bit more or less so the line out of the shooters' average position passes through 'aim'.
+    public static double aimHeadingFrom(double x, double y, FieldMap.Point aim) {
         double dx = aim.x - x;
         double dy = aim.y - y;
         double distance = Math.max(Math.hypot(dx, dy), 1e-6);
@@ -99,8 +110,7 @@ public class AutoAimer {
 
     // ShotTable settings for where the robot is now
     public ShotTable.ShotPoint getShot() {
-        Pose2D current = pose.get();
-        return ShotTable.at(new FieldMap.Point(current.getX(DistanceUnit.INCH), current.getY(DistanceUnit.INCH)), isRed);
+        return ShotTable.at(robotPoint(), isRed);
     }
 
     // Sets both flywheels and hoods to the ShotTable settings for where the robot is
@@ -122,7 +132,7 @@ public class AutoAimer {
         return robot.shootersAtSpeed() && isHeadingOnTarget();
     }
 
-    private static double normalize(double degrees) {
+    public static double normalize(double degrees) {
         double a = degrees;
         while (a > 180) a -= 360;
         while (a <= -180) a += 360;
