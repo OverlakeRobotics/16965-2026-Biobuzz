@@ -53,7 +53,10 @@ public class RobotHardware {
                 hardwareMap.get(DcMotorEx.class, "transfer")
         );
 
-        flower = new Flower(hardwareMap.get(Servo.class, "flower"));
+        // flowerR is mounted mirrored, so reversing it lets both servos use the same positions
+        Servo flowerR = hardwareMap.get(Servo.class, "flowerR");
+        flowerR.setDirection(Servo.Direction.REVERSE);
+        flower = new Flower(hardwareMap.get(Servo.class, "flowerL"), flowerR);
     }
 
     // Odometry drivetrain for TeleOp. Pinpoint offsets come from pedro/Constants via

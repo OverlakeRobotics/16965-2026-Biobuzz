@@ -200,18 +200,10 @@ public class FieldMap {
         return zones;
     }
 
-    // True if the robot's center can be here, at any heading, without anything touching it
-    public static boolean isClear(Point p) {
-        for (Rect zone : keepOutZones()) {
-            if (zone.contains(p)) return false;
-        }
-        return true;
-    }
-
     // Waypoints from 'from' to 'to' where no straight leg comes near an obstacle, for
     // OdometryHolonomicDrivetrain.setPositionDrive(Pose2D[]), which drives straight between waypoints.
     // Detour waypoints keep the starting heading so the robot doesn't swing around next to an obstacle;
-    // only the last waypoint uses 'to's heading. If 'to' isn't clear (isClear) the robot stays put.
+    // only the last waypoint uses 'to's heading. If 'to' is inside a keep-out zone the robot stays put.
     public static Pose2D[] routeTo(Pose2D from, Pose2D to) {
         Rect[] zones = keepOutZones();
         double heading = from.getHeading(AngleUnit.DEGREES);

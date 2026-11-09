@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.code.opmodes;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -9,187 +12,127 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.code.FieldMap;
+import org.firstinspires.ftc.teamcode.code.RobotHardware;
 import org.firstinspires.ftc.teamcode.code.ShotTable;
-import org.firstinspires.ftc.teamcode.code.helpers.BaseTeleOp;
 import org.firstinspires.ftc.teamcode.code.parts.Shooter;
+import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 
-import java.util.Arrays;
-
-// Tunes the ShotTable spots, on the red alliance's LEFT side (-X). Starts like the red TeleOp: field
-// center, facing red (-90 degrees). The robot only drives itself; by hand it can only turn.
+// Drive anywhere and set the shooters by hand, to find ShotTable values and to test the shooters and
+// intake. Drives exactly like the old Manual Test TeleOp: plain robot-centric velocity drive, nothing from
+// BaseTeleOp (which also changes how the robot brakes). Red alliance, so the screen matches the ShotTable
+// copy rule. Starts on the field center, facing red (-90 degrees).
 //
 // Controls (gamepad 1):
-//   X / Y              drive to the next / previous ShotTable spot (around the HIVE legs, FLOWERS and
-//                      walls), at the ShotTable heading for that spot, then hold there
-//   Guide (center)     drive back to the start pose, to stop and re-init from the same spot
-//   Right stick        turn in place (still holding the spot), to try shots at other headings
+//   Sticks             drive (robot-centric)
 //   A                  switch the D-pad between POLLEN and NECTAR
 //   D-pad up/down      flywheel velocity +/- tuneVelocityStep ticks/s, 0 to Shooter.MAX_VELOCITY (hold to repeat)
 //   D-pad right/left   hood servo position +/- hoodPositionStep (hold to repeat)
 //   B                  toggle intake + transfer (starts off)
-// The blockers stay open whenever the flywheels are running at the tuning values (once a spot is picked),
-// whatever their measured speed, so the intake toggle is what starts and stops shooting. Each spot starts from
-// the ShotTable (interpolated if it isn't tuned yet) and keeps its changes for the rest of the run, so
-// going back to a spot picks up where you left off. Telemetry shows the position and heading, and each
-// shooter's target velocity, measured velocity and hood: ShotTable.POINTS says how to copy them in.
+//   Hold X             reverse intake + transfer
+// The flywheels and hoods stay at the values set here wherever the robot drives; they start at the
+// ShotTable values for the start pose. The blockers are always open, so the intake is what starts and
+// stops shooting. ShotTable.POINTS says how to copy the telemetry into it.
 @Config
-@TeleOp(name = "Shot Tuner (Red LEFT)", group = "TeleOp")
-public class ShotTuner extends BaseTeleOp {
+@TeleOp(name = "Shot Tuner", group = "TeleOp")
+public class ShotTuner extends OpMode {
+    public static double driveVelocity = 2800;
     public static double tuneVelocityStep = 28;   // ticks/s per step, 1% of Shooter.MAX_VELOCITY
     public static double hoodPositionStep = 0.01;
-    public static double turnSpeed = 30;          // degrees/s at full right stick
     public static double repeatDelay = 0.3;       // seconds a D-pad button is held before it starts repeating
     public static double repeatInterval = 0.08;   // seconds between repeated steps
 
-    private static final ShotTable.ShotPoint[] SPOTS = ShotTable.POINTS;
-
-    // This run's settings for each spot, NaN until visited. Velocity in ticks/s, hood as the servo position.
-    private final double[] pollenVelocity = nan(SPOTS.length);
-    private final double[] nectarVelocity = nan(SPOTS.length);
-    private final double[] pollenHood = nan(SPOTS.length);
-    private final double[] nectarHood = nan(SPOTS.length);
-
-    private int spot = -1;                 // index into SPOTS, -1 before the first X
+    private RobotHardware robot;
+    private OdometryHolonomicDrivetrain driveTrain;
+    private boolean intakeOn = false;
     private boolean nectarSelected = false;
-    private Pose2D target;                 // where the robot is driving to / holding
-    private double heldHeading;
-    private boolean arrived = false;
-    private final ElapsedTime loopTimer = new ElapsedTime();
+
+    // The values being tuned: velocities in ticks/s, hoods as servo positions
+    private double pollenVelocity, nectarVelocity;
+    private double pollenHood, nectarHood;
     private final Stepper velocityStepper = new Stepper();
     private final Stepper hoodStepper = new Stepper();
 
     @Override
-    protected boolean isRedAlliance() {
-        return true;
+    public void init() {
+        // Sends telemetry to the Driver Station and the dashboard
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        robot = new RobotHardware(hardwareMap);
+        driveTrain = robot.createDrivetrain();
     }
 
-    // Not used: there's no stick driving here
-    @Override
-    protected boolean isFieldCentric() {
-        return false;
-    }
-
-    // Always the default start (field center), even after an Auto
     @Override
     public void start() {
-        driveTrain.setPosition(getDefaultStartPose());
+        // Start on the field center, facing the red side of the HIVE (-Y in FieldMap)
+        driveTrain.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, -90));
+        ShotTable.ShotPoint shot = ShotTable.at(new FieldMap.Point(0, 0), true);
+        pollenVelocity = Range.clip(shot.pollenVelocity, 0, Shooter.MAX_VELOCITY);
+        nectarVelocity = Range.clip(shot.nectarVelocity, 0, Shooter.MAX_VELOCITY);
+        pollenHood = Range.clip(robot.pollen.hoodPositionFor(shot.pollenHoodAngle), 0, 1);
+        nectarHood = Range.clip(robot.nectar.hoodPositionFor(shot.nectarHoodAngle), 0, 1);
     }
 
     @Override
-    protected void handleAiming() {
-        if (gamepad1.xWasPressed() && spot < SPOTS.length - 1) {
-            goToSpot(spot + 1);
-        } else if (gamepad1.yWasPressed() && spot > 0) {
-            goToSpot(spot - 1);
-        } else if (gamepad1.guideWasPressed()) {
-            driveTo(getDefaultStartPose());
-        }
-    }
+    public void loop() {
+        driveTrain.updatePosition();
+        driveTrain.setVelocityDrive(
+                -gamepad1.left_stick_y * driveVelocity,
+                -gamepad1.left_stick_x * driveVelocity,
+                -gamepad1.right_stick_x * driveVelocity
+        );
 
-    private void goToSpot(int index) {
-        spot = index;
-        FieldMap.Point field = spotOnField(index);
-        if (Double.isNaN(pollenVelocity[index])) {
-            // First visit: start from what the ShotTable would use here
-            ShotTable.ShotPoint shot = ShotTable.at(field, true);
-            pollenVelocity[index] = Range.clip(shot.pollenVelocity, 0, Shooter.MAX_VELOCITY);
-            nectarVelocity[index] = Range.clip(shot.nectarVelocity, 0, Shooter.MAX_VELOCITY);
-            pollenHood[index] = Range.clip(robot.pollen.hoodPositionFor(shot.pollenHoodAngle), 0, 1);
-            nectarHood[index] = Range.clip(robot.nectar.hoodPositionFor(shot.nectarHoodAngle), 0, 1);
-        }
-        driveTo(autoAimer.getAimedPose(field));
-    }
-
-    private static FieldMap.Point spotOnField(int index) {
-        return ShotTable.fromTableQuadrant(SPOTS[index].position(), FieldMap.LEFT, true);
-    }
-
-    private void driveTo(Pose2D pose) {
-        routeTo(pose);
-        target = pose;
-        heldHeading = pose.getHeading(AngleUnit.DEGREES);
-        arrived = false;
-    }
-
-    // Only turning by hand, and only once the robot has arrived (turning mid-route would change the
-    // route). Turning re-sends the hold at the same spot with the new heading.
-    @Override
-    protected void handleDrive() {
-        double dt = loopTimer.seconds();
-        loopTimer.reset();
-        if (target == null) return;
-        if (!arrived) {
-            arrived = !driveTrain.isDriving();
-            return;
-        }
-        double turn = -gamepad1.right_stick_x;
-        if (Math.abs(turn) <= stickDeadband) return;
-        heldHeading += turn * turnSpeed * dt;
-        driveTrain.setPositionDrive(new Pose2D(DistanceUnit.INCH, target.getX(DistanceUnit.INCH),
-                target.getY(DistanceUnit.INCH), AngleUnit.DEGREES, heldHeading));
-    }
-
-    @Override
-    protected void handleIntake() {
         if (gamepad1.bWasPressed()) {
             intakeOn = !intakeOn;
         }
-        if (intakeOn) {
+        if (gamepad1.x) {
+            robot.intake.reverse();
+        } else if (intakeOn) {
             robot.intake.in();
         } else {
             robot.intake.stop();
         }
+
+        adjustShooters();
+        // Sent every loop, so PIDF edits from the dashboard take effect immediately
+        robot.setShooterVelocities(pollenVelocity, nectarVelocity);
+        robot.pollen.setHoodPosition(pollenHood);
+        robot.nectar.setHoodPosition(nectarHood);
+        robot.openBlockers();
+
+        driveTrain.drive();
+        addTelemetry();
     }
 
-    @Override
-    protected void handleSpeedAdjust() {
+    private void adjustShooters() {
         if (gamepad1.aWasPressed()) {
             nectarSelected = !nectarSelected;
         }
         int velocityChange = velocityStepper.step(gamepad1.dpad_up, gamepad1.dpad_down);
         int hoodChange = hoodStepper.step(gamepad1.dpad_right, gamepad1.dpad_left);
-        if (spot < 0) return;
-
-        double[] velocity = nectarSelected ? nectarVelocity : pollenVelocity;
-        double[] hood = nectarSelected ? nectarHood : pollenHood;
-        velocity[spot] = Range.clip(velocity[spot] + velocityChange * tuneVelocityStep, 0, Shooter.MAX_VELOCITY);
-        hood[spot] = Range.clip(hood[spot] + hoodChange * hoodPositionStep, 0, 1);
-    }
-
-    // Before the first spot the flywheels are off and the blockers stay closed (as built in RobotHardware)
-    @Override
-    protected void handleShooting() {
-        if (spot < 0) return;
-        robot.setShooterVelocities(pollenVelocity[spot], nectarVelocity[spot]);
-        robot.pollen.setHoodPosition(pollenHood[spot]);
-        robot.nectar.setHoodPosition(nectarHood[spot]);
-
-        robot.openBlockers();
+        if (nectarSelected) {
+            nectarVelocity = Range.clip(nectarVelocity + velocityChange * tuneVelocityStep, 0, Shooter.MAX_VELOCITY);
+            nectarHood = Range.clip(nectarHood + hoodChange * hoodPositionStep, 0, 1);
+        } else {
+            pollenVelocity = Range.clip(pollenVelocity + velocityChange * tuneVelocityStep, 0, Shooter.MAX_VELOCITY);
+            pollenHood = Range.clip(pollenHood + hoodChange * hoodPositionStep, 0, 1);
+        }
     }
 
     // Only what's needed while tuning: where the robot is, which shooter the D-pad changes, and each
     // shooter's target / measured velocity and hood
-    @Override
-    protected void addTelemetry() {
+    private void addTelemetry() {
         Pose2D pose = driveTrain.getPosition();
         telemetry.addData("Position (Pinpoint)", "X %.1f in, Y %.1f in, heading %.1f deg",
                 pose.getX(DistanceUnit.INCH), pose.getY(DistanceUnit.INCH), pose.getHeading(AngleUnit.DEGREES));
         telemetry.addData("D-pad controls", nectarSelected ? "NECTAR" : "POLLEN");
         addShooterLine("Pollen", robot.pollen);
         addShooterLine("Nectar", robot.nectar);
-        telemetry.addLine("X/Y next/prev spot | A pollen/nectar | D-pad up/down velocity, right/left hood | B intake | R stick turn | Guide start");
+        telemetry.addLine("Sticks drive | A pollen/nectar | D-pad up/down velocity, right/left hood | B intake, hold X reverse");
         telemetry.update();
     }
 
     private void addShooterLine(String name, Shooter shooter) {
         telemetry.addData(name, "target %.0f, current %.0f ticks/s, hood %.2f (%.2f deg)",
                 shooter.getTargetVelocity(), shooter.getVelocity(), shooter.getHoodPosition(), shooter.getHoodAngle());
-    }
-
-    private static double[] nan(int length) {
-        double[] values = new double[length];
-        Arrays.fill(values, Double.NaN);
-        return values;
     }
 
     // Two buttons that step a value up/down: one step when pressed, then repeating while held

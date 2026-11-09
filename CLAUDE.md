@@ -14,12 +14,12 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Saved Path Planner routes (JSON) live in `TeamCode/src/main/assets/pathJsons/`: this season's in `biobuzz/`, last season's in `decode/`. Red routes are the blue ones rotated 180° (`forAlliance`).
 
 ### `code/`: current robot code (this season)
-- `RobotHardware`: the ONLY place that touches `hardwareMap`. Builds the two shooters (`pollen` = flywheelP/hoodP/blockerP, `nectar` = flywheelN/hoodN/blockerN), the `intake` (intake + transfer motors), the `flower` servo, and (via `createDrivetrain()`) the TeleOp odometry drivetrain with the Pinpoint. Flywheel PIDF (`pollenPIDF`, `nectarPIDF`) is tunable in FTC Dashboard.
-- `FieldMap`: field and robot dimensions, the obstacles (two HIVE base bars, four FLOWERS, the walls), the CELL aim point (`cellAimX/Y`, dashboard-tunable), `TargetSide` LEFT/RIGHT, `forAlliance()` (blue → red, 180° rotation), `isClear()`, and `routeTo()` (Dijkstra route around the obstacles for the guide button and `ShotTuner`).
-- `ShotTable`: settings tuned at the spots in `POINTS` (the robot heading that scored, each shooter's velocity and hood angle in degrees; `UNTUNED` where not tuned yet). `at()` interpolates each setting by position (inverse-distance-squared over the spots where it's tuned; exact on a spot), so the shooters and aim heading are set for any position. Distance to the CELL alone wasn't enough: spots the same distance away needed different settings. Copy rule from the ShotTuner screen: x = −X, y = −Y, heading = heading + 180. Written for ONE quadrant (blue, LEFT, +X +Y) and mirrored to the other three by `toTableQuadrant` / `fromTableQuadrant`.
-- `parts/`: mechanisms. `Shooter` (one flywheel + hood + blocker, velocity PIDF, at-speed / below-speed checks, hood angle ↔ servo conversion), `Intake` (intake + transfer, always together), `Flower` (one servo, open/closed).
+- `RobotHardware`: the ONLY place that touches `hardwareMap`. Builds the two shooters (`pollen` = flywheelP/hoodP/blockerP, `nectar` = flywheelN/hoodN/blockerN), the `intake` (intake + transfer motors), the `flower` (servos `flowerL` and `flowerR`, R reversed), and (via `createDrivetrain()`) the TeleOp odometry drivetrain with the Pinpoint. Flywheel PIDF (`pollenPIDF`, `nectarPIDF`) is tunable in FTC Dashboard.
+- `FieldMap`: field and robot dimensions, the obstacles (two HIVE base bars, four FLOWERS, the walls), the CELL aim point (`cellAimX/Y`, dashboard-tunable), `TargetSide` LEFT/RIGHT, `forAlliance()` (blue → red, 180° rotation), and `routeTo()` (Dijkstra route around the obstacles for the guide button).
+- `ShotTable`: settings tuned at the spots in `POINTS` (the robot heading that scored, each shooter's velocity and hood angle in degrees; `UNTUNED` where not tuned yet). `at()` interpolates each setting by position (inverse-distance-squared over the spots where it's tuned; exact on a spot), so the shooters and aim heading are set for any position. Distance to the CELL alone wasn't enough: spots the same distance away needed different settings. Copy rule from the ShotTuner screen: x = −X, y = −Y, heading = heading + 180. Written for ONE quadrant (blue, LEFT, +X +Y) and mirrored to the other three by `toTableQuadrant`. Places in the drivers' shooting region still to tune are listed in a TODO above `POINTS`.
+- `parts/`: mechanisms. `Shooter` (one flywheel + hood + blocker, velocity PIDF, at-speed / below-speed checks, hood angle ↔ servo conversion), `Intake` (intake + transfer, always together), `Flower` (two servos moving together, open/closed).
 - `helpers/`: shared logic. `AutoAimer` (active CELL, aim heading = straight at the CELL + the ShotTable heading offset (mirrored on the RIGHT side), aimed pose at a position, ShotTable settings for the robot's position, heading check), `BaseTeleOp` (all competition TeleOp logic; subclasses only pick alliance and field/robot-centric), `BaseAuto` (follows a Path Planner route with Pedro Pathing and runs route tags; stores `lastPose` for TeleOp).
-- `opmodes/`: `ShotTuner` (red LEFT side: drives itself to each `ShotTable` spot at its heading, right stick turns, D-pad tunes velocity/hood, B toggles intake, blockers always open; telemetry is position/heading, D-pad mode, one line per shooter, controls), `ManualTestTeleOp` (temporary; drive and set the shooters by hand), `MotorTester`, `PathPlanner` (runs whatever route is uploaded live through `PathServer`).
+- `opmodes/`: `ShotTuner` (red; drives exactly like the old `ManualTestTeleOp` it replaced: plain robot-centric velocity drive, NOT a `BaseTeleOp` subclass, so no `positionP` and no Y/guide. D-pad sets velocity/hood by hand, A switches pollen/nectar, B toggles intake, hold X reverses it, blockers always open; telemetry is position/heading, D-pad mode, one line per shooter, controls), `MotorTester`, `PathPlanner` (runs whatever route is uploaded live through `PathServer`).
 - `opmodes/TeleOps/`: `Red`/`Blue` × `Field`/`Robot`-centric TeleOps, each a tiny subclass of `BaseTeleOp`.
 - `opmodes/Autos/`: `Red`/`Blue` × `BothCells` (shoot RIGHT, GARDEN pickup, shoot LEFT, park) / `OneCell` (shoot RIGHT twice, park) / `DelayedShot` (start on the +X wall at (63, 40), clear of the FLOWER, wait 17 s, shoot LEFT, park) Autos, each a tiny subclass of `BaseAuto` pointing at its `pathJsons/biobuzz/` route.
 
@@ -76,18 +76,19 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 - Field-centric "stick up" = away from the driver: blue → −Y, red → +Y.
 - Robot heading: 90° faces +Y (toward blue), −90° faces −Y (toward red), 0° faces +X, 180° faces −X.
 - The shooters fire out the robot's LEFT side, so to shoot the robot faces 90° away from the CELL. At the blue LEFT Auto shot spot (50.1, 13.2) it faces 91.3° (+Y, tuned); its left side points at the −X direction, at the CELL (13.5, 13). The aim heading is the ShotTable's tuned heading, interpolated: up to 10° clockwise of straight at the CELL on the LEFT side (counter-clockwise on the mirrored RIGHT side).
-- Pinpoint check: start the robot at (0, 0) facing red (−90°, the Manual Test start). Driving forward should make Y go down, strafing right should make X go down, turning left (CCW) should make H go up.
+- Pinpoint check: start the robot at (0, 0) facing red (−90°, the Shot Tuner start). Driving forward should make Y go down, strafing right should make X go down, turning left (CCW) should make H go up.
 - LEFT / RIGHT CELL are as the driver sees them, standing on their own alliance's side looking at the HIVE. Blue LEFT is the +X CELL; red LEFT is the −X CELL.
 - The active CELL is the one on the robot's half of the field (`AutoAimer.getActiveSide()`); you can't score into the other one from there.
 - Shot points and the CELL aim point are written for one quadrant (blue, LEFT: +X, +Y) and mirrored/rotated to the others. Never duplicate them per quadrant.
 - Robot center = turning center, defined by the Pedro-tuned Pinpoint pod offsets. Shooter offsets (`AutoAimer.nectarForwardOffset = 3.732`, `pollenForwardOffset = -2.828`) are measured from it.
-- Routing avoids the two HIVE base bars, the four FLOWERS (on the walls, 24 in from each wall's center: (72, 24), (−72, −24), (24, −72), (−24, 72), about 7 in wide × 5 in out) and the walls. The HIVES hang 30.6 in up, so the robot drives under them. Keep-out zone = obstacle grown by robot radius (half diagonal) + `OBSTACLE_MARGIN` (3 in), so the robot center staying outside means nothing can hit at any heading. Detour waypoints sit `WAYPOINT_CLEARANCE` (4 in, ≥ `routeTolerance`) outside the zones because the drivetrain cuts corners by up to `routeTolerance`. A target that isn't `isClear` isn't driven to.
+- Routing avoids the two HIVE base bars, the four FLOWERS (on the walls, 24 in from each wall's center: (72, 24), (−72, −24), (24, −72), (−24, 72), about 7 in wide × 5 in out) and the walls. The HIVES hang 30.6 in up, so the robot drives under them. Keep-out zone = obstacle grown by robot radius (half diagonal) + `OBSTACLE_MARGIN` (3 in), so the robot center staying outside means nothing can hit at any heading. Detour waypoints sit `WAYPOINT_CLEARANCE` (4 in, ≥ `routeTolerance`) outside the zones because the drivetrain cuts corners by up to `routeTolerance`. A target inside a keep-out zone isn't driven to.
 
 ## Robot behavior (competition TeleOp, gamepad 1)
 
 | Input | Action |
 |---|---|
 | Sticks | Drive (field- or robot-centric by OpMode). Field-centric forward: blue → −Y (right → −X), red → +Y (`blueFieldCentricOffset = -90`, red + 180). |
+| Y | Turn in place to the aim heading for where the robot is (the ShotTable's tuned heading, interpolated), then HOLD that spot and heading until any stick moves. Doesn't route, so it also works next to a wall or the HIVE. |
 | Guide (center "mode"/logo button) | Drive back to the TeleOp default start pose ((0, 0), blue 90°, red −90°) around the HIVE bars, then HOLD it until any stick moves. For stopping and re-initing from the same spot during testing. |
 | D-pad up / down | Pollen target speed +/- `velocityStep` (50 ticks/s). Hold LT (> 0.3): nectar instead. Offsets add to the ShotTable speeds at every point and last for the TeleOp run. |
 | Hold RT (> 0.3) | Shoot. Blockers open while heading is within `headingTolerance` (3°) of the aim heading (the ShotTable heading for where the robot is). Intake feeds while aimed, pauses whenever either flywheel is BELOW speed (over speed is fine). A/B ignored while shooting. |
@@ -96,9 +97,9 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 | X | Toggle flower open (0.47) / closed (0). Starts open at init. |
 
 - Flywheels ALWAYS spin, at the ShotTable velocities interpolated for the robot's position plus the D-pad offsets; hoods follow the ShotTable too (recomputed every loop). No off switch.
-- No aim lock and no presets: turning to the CELL is manual.
+- No presets. Y turns to the aim heading once and holds; otherwise turning is manual.
 - TeleOp default start (no Auto first): (0, 0), blue facing +Y (90°), red facing −Y (−90°). After Auto, TeleOp starts from `BaseAuto.lastPose` (static, lost on app restart/deploy).
-- TeleOp route driving (guide button, `ShotTuner`) uses the team's `OdometryHolonomicDrivetrain`, NOT Pedro (tuned by `routeVelocity`, `routeTolerance`, `positionP`). Pedro is only used in Auto.
+- TeleOp position driving (guide button, Y align) uses the team's `OdometryHolonomicDrivetrain`, NOT Pedro (tuned by `routeVelocity`, `routeTolerance`, `positionP`). Pedro is only used in Auto.
 
 ## How we write code here
 
@@ -106,7 +107,7 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 - No duplicated code, and it should be quick to find where something lives: hardware in `RobotHardware`, mechanisms in `parts/`, field data in `FieldMap`, shot data in `ShotTable`, logic in `helpers/`, OpModes are thin wrappers.
 - Match the surrounding code: comment density, naming, idioms. Comments explain why, in plain words.
 - Dashboard-tunable values: use plain `public static` primitive fields in an `@Config` class (last season's pattern). Read them every loop so edits apply live. Avoid nested config objects (see known issues).
-- Hood values in shot data are ANGLES in degrees; `Shooter.setHoodAngle` converts to servo position. `ManualTestTeleOp` telemetry shows the angle to copy.
+- Hood values in shot data are ANGLES in degrees; `Shooter.setHoodAngle` converts to servo position. `ShotTuner` telemetry shows the angle to copy.
 - Both shooters always fire together into the same CELL; they have separate velocities and hoods.
 - Ask questions until the requirement is clear before writing a lot of code; give the plan first when asked for one.
 - Don't commit or push unless asked.

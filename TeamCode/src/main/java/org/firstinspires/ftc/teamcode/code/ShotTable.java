@@ -11,36 +11,30 @@ import java.util.function.ToDoubleFunction;
 //
 // Only written for ONE quadrant: the blue half, LEFT CELL side (+X, +Y). The field is symmetric, so the
 // same spots work in the other three quadrants: RIGHT side mirrors x, red rotates 180 degrees.
-// toTableQuadrant / fromTableQuadrant do the conversion, so nothing here needs duplicating.
+// toTableQuadrant does the conversion, so nothing here needs duplicating.
 public class ShotTable {
     private static final double UNTUNED = Double.NaN;
 
-    // The spots ShotTuner steps through, in driving order. They cover the region the drivers shoot from on
-    // the LEFT side (red field X -72 to -38, Y -72 to 44.6), and every one is FieldMap.isClear (the robot can
-    // turn all the way around there without hitting the HIVE, a FLOWER or a wall).
-    // A setting that isn't tuned at a spot is UNTUNED and left out of that setting's interpolation; a spot
-    // with only x, y has nothing tuned yet.
+    // Tuned spots, anywhere on the field. A setting that isn't tuned at a spot is UNTUNED and left out of
+    // that setting's interpolation (so far only pollen and the heading are tuned, plus nectar at the Auto spot).
     //
-    // Copying from the ShotTuner screen (red, LEFT side), Position line X, Y, heading:
+    // Copying from the ShotTuner screen (red alliance), Position line X, Y, heading:
     //   x = -X, y = -Y, heading = heading + 180
     //   velocities = the target ticks/s, hood angles = the degrees in brackets
+    //
+    // TODO: the drivers shoot from red field X -72 to -38, Y -72 to 44.6 (and its mirror images). Places in
+    // there still far from a tuned spot, as red field X, Y on the ShotTuner screen; each leaves room for the
+    // robot to turn all the way around: (-50, -30), (-40, -30), (-40, -50), the corner (-52, -52),
+    // (-52, 40), (-40, 40), (-40, 22), (-40, 5).
     public static final ShotPoint[] POINTS = {
-            //            x      y     heading pollen vel/hood   nectar vel/hood
-            new ShotPoint(40.4,  12.9,  90.5,  1562, 16.2,       UNTUNED, UNTUNED),
-            new ShotPoint(43.3,  13.0,  90.2,  1618, 16.2,       UNTUNED, UNTUNED),
-            new ShotPoint(50.1,  13.2,  91.3,  1618, 24.2,       1900, 17.04),   // where the Autos shoot
-            new ShotPoint(50, 30),   // TODO: tune
-            new ShotPoint(40, 30),   // TODO: tune
-            new ShotPoint(40, 50),   // TODO: tune
-            new ShotPoint(52, 52),   // TODO: tune. Corner: 7 in from both walls with the robot turned any way
-            new ShotPoint(56.1,  49.9,  127.5, 1646, 28.2,       UNTUNED, UNTUNED),
-            new ShotPoint(56.1,  0.0,   63.6,  1590, 20.2,       UNTUNED, UNTUNED),
-            new ShotPoint(55.9,  -13.1, 55.5,  1562, 16.2,       UNTUNED, UNTUNED),
-            new ShotPoint(55.8,  -24.0, 42.8,  1674, 20.2,       UNTUNED, UNTUNED),
-            new ShotPoint(52, -40),  // TODO: tune
-            new ShotPoint(40, -40),  // TODO: tune
-            new ShotPoint(40, -22),  // TODO: tune
-            new ShotPoint(40, -5),   // TODO: tune
+            //            x      y      heading pollen vel/hood   nectar vel/hood
+            new ShotPoint(40.4,  12.9,  90.5,   1562, 16.2,       UNTUNED, UNTUNED),
+            new ShotPoint(43.3,  13.0,  90.2,   1618, 16.2,       UNTUNED, UNTUNED),
+            new ShotPoint(50.1,  13.2,  91.3,   1618, 24.2,       1900, 17.04),   // where the Autos shoot
+            new ShotPoint(56.1,  49.9,  127.5,  1646, 28.2,       UNTUNED, UNTUNED),
+            new ShotPoint(56.1,  0.0,   63.6,   1590, 20.2,       UNTUNED, UNTUNED),
+            new ShotPoint(55.9,  -13.1, 55.5,   1562, 16.2,       UNTUNED, UNTUNED),
+            new ShotPoint(55.8,  -24.0, 42.8,   1674, 20.2,       UNTUNED, UNTUNED),
     };
 
     public static final class ShotPoint {
@@ -58,11 +52,6 @@ public class ShotTable {
             this.pollenHoodAngle = pollenHoodAngle;
             this.nectarVelocity = nectarVelocity;
             this.nectarHoodAngle = nectarHoodAngle;
-        }
-
-        // A spot with nothing tuned yet
-        public ShotPoint(double x, double y) {
-            this(x, y, UNTUNED, UNTUNED, UNTUNED, UNTUNED, UNTUNED);
         }
 
         public FieldMap.Point position() {
@@ -110,11 +99,5 @@ public class ShotTable {
     public static FieldMap.Point toTableQuadrant(FieldMap.Point fieldPoint, boolean isRed) {
         FieldMap.Point blue = FieldMap.forAlliance(fieldPoint, isRed);
         return new FieldMap.Point(Math.abs(blue.x), blue.y);
-    }
-
-    // Table quadrant position -> the matching field position on the given side and alliance
-    public static FieldMap.Point fromTableQuadrant(FieldMap.Point tablePoint, FieldMap.TargetSide side, boolean isRed) {
-        FieldMap.Point blue = side == FieldMap.RIGHT ? new FieldMap.Point(-tablePoint.x, tablePoint.y) : tablePoint;
-        return FieldMap.forAlliance(blue, isRed);
     }
 }

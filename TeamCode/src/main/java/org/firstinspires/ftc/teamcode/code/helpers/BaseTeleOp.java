@@ -17,6 +17,8 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 //
 // Controls (gamepad 1):
 //   Sticks         drive
+//   Y              turn in place to the aim heading for where the robot is (the ShotTable's tuned heading,
+//                  interpolated), then hold that spot and heading; any stick cancels
 //   Guide (center) drive back to the TeleOp start pose around the field elements, then hold there, so the
 //                  OpMode can be stopped and re-inited from the same spot; any stick cancels
 //   D-pad up/down  pollen target speed +/- velocityStep (hold LT: nectar instead), on top of the ShotTable
@@ -47,7 +49,7 @@ public abstract class BaseTeleOp extends OpMode {
     protected OdometryHolonomicDrivetrain driveTrain;
     protected AutoAimer autoAimer;
 
-    protected boolean routing = false;       // driving to, or holding at, the start pose
+    protected boolean routing = false;       // driving to / holding the start pose, or turning to / holding the aim heading
     protected boolean intakeOn = false;
     protected boolean shooting = false;
     // D-pad changes to the ShotTable velocities (ticks/s), kept for the rest of this TeleOp run
@@ -86,11 +88,13 @@ public abstract class BaseTeleOp extends OpMode {
         addTelemetry();
     }
 
-    // Guide starts a route back to the start pose. After arriving the robot keeps holding that spot and
-    // heading (pushing back if bumped) until any stick moves.
+    // Guide starts a route back to the start pose; Y turns in place to the aim heading. Either way the
+    // robot then keeps holding that spot and heading (pushing back if bumped) until any stick moves.
     protected void handleAiming() {
         if (gamepad1.guideWasPressed()) {
             routeTo(getDefaultStartPose());
+        } else if (gamepad1.yWasPressed()) {
+            alignToShot();
         }
 
         if (routing && sticksMoved()) {
@@ -98,14 +102,24 @@ public abstract class BaseTeleOp extends OpMode {
         }
     }
 
-    protected void routeTo(Pose2D target) {
+    private void routeTo(Pose2D target) {
         driveTrain.setVelocity((int) routeVelocity);
         driveTrain.setTolerance(routeTolerance);
         driveTrain.setPositionDrive(FieldMap.routeTo(driveTrain.getPosition(), target));
         routing = true;
     }
 
-    protected Pose2D getDefaultStartPose() {
+    // Only turns: the robot stays where the driver put it, even next to a wall or the HIVE, so this
+    // doesn't route (routing would first move it away from anything close)
+    private void alignToShot() {
+        Pose2D current = driveTrain.getPosition();
+        driveTrain.setVelocity((int) routeVelocity);
+        driveTrain.setPositionDrive(new Pose2D(DistanceUnit.INCH, current.getX(DistanceUnit.INCH),
+                current.getY(DistanceUnit.INCH), AngleUnit.DEGREES, autoAimer.getAimHeading()));
+        routing = true;
+    }
+
+    private Pose2D getDefaultStartPose() {
         return FieldMap.forAlliance(new Pose2D(DistanceUnit.INCH, defaultStartX, defaultStartY,
                 AngleUnit.DEGREES, defaultStartHeading), isRedAlliance());
     }

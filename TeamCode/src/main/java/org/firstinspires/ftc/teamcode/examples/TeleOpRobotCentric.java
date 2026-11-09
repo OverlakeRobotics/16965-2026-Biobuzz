@@ -16,7 +16,7 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 
 
 // An example of a simple robot-centric TeleOp. Shooter/intake testing lives in
-// code/opmodes/ManualTestTeleOp.
+// code/opmodes/ShotTuner.
 //@Disabled
 @Config
 @TeleOp(name = "TeleOp Robot Centric", group = "TeleOp")
