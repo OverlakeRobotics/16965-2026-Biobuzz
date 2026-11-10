@@ -14,10 +14,10 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 All Java is under `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/`. Saved Path Planner routes (JSON) live in `TeamCode/src/main/assets/pathJsons/`: this season's in `biobuzz/`, last season's in `decode/`. Red routes are the blue ones rotated 180° (`forAlliance`).
 
 ### `code/`: current robot code (this season)
-- `RobotHardware`: the ONLY place that touches `hardwareMap`. Builds the two shooters (`pollen` = flywheelP/hoodP/blockerP, `nectar` = flywheelN/hoodN/blockerN), the `intake` (intake + transfer motors), the `flower` servo, and (via `createDrivetrain()`) the TeleOp odometry drivetrain with the Pinpoint. Flywheel PIDF (`pollenPIDF`, `nectarPIDF`) is tunable in FTC Dashboard.
+- `RobotHardware`: the ONLY place that touches `hardwareMap`. Builds the two shooters (`pollen` = flywheelP/hoodP/blockerP, `nectar` = flywheelN/hoodN/blockerN), the `intake` (intake + transfer motors), the `flower` (flowerL + flowerR servos, flowerR reversed), and (via `createDrivetrain()`) the TeleOp odometry drivetrain with the Pinpoint. Flywheel PIDF (`pollenPIDF`, `nectarPIDF`) is tunable in FTC Dashboard.
 - `FieldMap`: field and robot dimensions, the two HIVE base bars (the only obstacles), the CELL aim point (`cellAimX/Y`, dashboard-tunable), `TargetSide` LEFT/RIGHT, `forAlliance()` (blue → red, 180° rotation), and `routeTo()` (Dijkstra route around the bars for the TeleOp presets).
 - `ShotTable`: known-good shooter settings (position, both flywheel velocities, both hood angles in degrees) for spots on the field. The preset is the plain dashboard fields `presetX/Y`, `presetPollenVelocity`, etc.; more fixed spots go in `OTHER_POINTS`. Written for ONE quadrant (blue, LEFT, +X +Y) and mirrored to the other three by `toTableQuadrant` / `fromTableQuadrant`.
-- `parts/`: mechanisms. `Shooter` (one flywheel + hood + blocker, velocity PIDF, at-speed / below-speed checks, blocker open wait, hood angle ↔ servo conversion), `Intake` (intake + transfer, always together), `Flower` (one servo, open/closed).
+- `parts/`: mechanisms. `Shooter` (one flywheel + hood + blocker, velocity PIDF, at-speed / below-speed checks, blocker open wait, hood angle ↔ servo conversion), `Intake` (intake + transfer, always together), `Flower` (two servos that always move together, open/closed).
 - `helpers/`: shared logic. `AutoAimer` (active CELL, aim heading, preset pose, closest shot point, position/heading checks), `BaseTeleOp` (all competition TeleOp logic; subclasses only pick alliance and field/robot-centric), `BaseAuto` (follows a Path Planner route with Pedro Pathing and runs route tags; stores `lastPose` for TeleOp).
 - `opmodes/`: `ManualTestTeleOp` (temporary; for finding shot-table values by hand), `MotorTester`, `PathPlanner` (runs whatever route is uploaded live through `PathServer`).
 - `opmodes/TeleOps/`: `Red`/`Blue` × `Field`/`Robot`-centric TeleOps, each a tiny subclass of `BaseTeleOp`.
@@ -94,7 +94,7 @@ Top-down view, drawn with blue on the left (same as the team's field map):
 | Hold RT (> 0.3) | Shoot. Blockers open while heading is within `headingTolerance` (3°) AND within `positionTolerance` (6 in) of a shot point. Intake feeds once the blockers have been open for `blockerOpenSeconds` (0.3 s), pauses whenever either flywheel is BELOW speed (over speed is fine). A/B ignored while shooting. |
 | B | Toggle intake + transfer |
 | Hold A | Reverse intake + transfer |
-| X | Toggle flower open (0.43) / closed (0). Starts open at init. |
+| X | Toggle flower open (0.32) / closed (0.02). Starts open at init. |
 | Hold Y | Clear: blockers open and intake + transfer reverse. On release, blockers close and intake turns on. Highest priority: overrides RT, A and B while held. |
 
 - Flywheels ALWAYS spin, at the closest shot point's velocities plus the D-pad offsets (recomputed every loop). No off switch.
