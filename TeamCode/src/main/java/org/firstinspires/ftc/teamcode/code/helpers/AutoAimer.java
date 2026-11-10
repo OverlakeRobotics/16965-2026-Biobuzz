@@ -77,12 +77,12 @@ public class AutoAimer {
     }
 
     // Points the shooters at that half's CELL, then turns by the ShotTable heading offset (how far the
-    // tuned headings were turned from that). The offsets are tuned for the LEFT CELL, so on the mirrored
-    // RIGHT side the robot turns the other way. Red is rotated, not mirrored, so it turns the same way.
+    // tuned headings were turned from that). The offset comes from the robot (where the shooters sit and
+    // how the ball leaves them), not the field, so the robot turns the same way on every side.
     private double getAimHeadingAt(FieldMap.Point position) {
         FieldMap.TargetSide side = sideAt(position);
         double offset = ShotTable.at(position, isRed).headingOffset();
-        return normalize(aimHeadingFrom(position.x, position.y, getAimPoint(side)) + (side == FieldMap.LEFT ? offset : -offset));
+        return normalize(aimHeadingFrom(position.x, position.y, getAimPoint(side)) + offset);
     }
 
     // Heading (degrees) that points the shooters (left side) straight at 'aim' from (x, y). With the
